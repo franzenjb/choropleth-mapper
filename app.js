@@ -216,19 +216,30 @@ class ChoroplethMapper {
             }
             this.geoData = await response.json();
             
-            if (!this.geoData.features || this.geoData.features.length === 0) {
+            if (!this.geoData || !this.geoData.features || this.geoData.features.length === 0) {
                 const tigerUrl = this.getTigerUrl(geoLevel, year, stateFilter);
                 const tigerResponse = await fetch(tigerUrl);
                 if (!tigerResponse.ok) {
                     throw new Error('Failed to fetch from Census TIGER service');
                 }
                 this.geoData = await tigerResponse.json();
+                
+                if (!this.geoData || !this.geoData.features) {
+                    throw new Error('Invalid geographic data received from service');
+                }
             }
         } catch (error) {
             console.error('Primary fetch failed, trying Census TIGER:', error);
             const tigerUrl = this.getTigerUrl(geoLevel, year, stateFilter);
             const response = await fetch(tigerUrl);
+            if (!response.ok) {
+                throw new Error('Failed to fetch geographic boundaries from both services');
+            }
             this.geoData = await response.json();
+            
+            if (!this.geoData || !this.geoData.features) {
+                throw new Error('Unable to fetch valid geographic boundaries. Please try again or select a different geography level.');
+            }
         }
     }
 
@@ -296,6 +307,10 @@ class ChoroplethMapper {
 
     mergeData(joinColumn, dataColumn) {
         const geoLevel = document.getElementById('geoLevel').value;
+        
+        if (!this.geoData || !this.geoData.features) {
+            throw new Error('No geographic data available. Please try processing again.');
+        }
         
         const csvMap = new Map();
         this.csvData.forEach(row => {
