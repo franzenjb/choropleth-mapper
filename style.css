@@ -233,6 +233,19 @@ header p {
     display: none;
 }
 
+.version-info {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 100;
+    font-family: 'Courier New', monospace;
+}
+
 .config-panel.hidden,
 .preview-panel.hidden {
     display: none;
