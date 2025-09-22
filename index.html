@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choropleth Mapper - CSV to ArcGIS</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Choropleth Mapper</h1>
+            <p>Transform your CSV data into ArcGIS-ready choropleth maps</p>
+        </header>
+
+        <div class="workflow">
+            <div class="step" id="step1">
+                <h2>1. Upload Your Data</h2>
+                <div class="upload-area" id="uploadArea">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <p>Drag & drop your CSV file here or click to browse</p>
+                    <input type="file" id="csvInput" accept=".csv" hidden>
+                </div>
+                <div id="fileInfo" class="file-info hidden"></div>
+            </div>
+
+            <div class="step" id="step2">
+                <h2>2. Configure Geography</h2>
+                <div class="config-panel hidden" id="configPanel">
+                    <div class="form-group">
+                        <label for="geoLevel">Geographic Level:</label>
+                        <select id="geoLevel">
+                            <option value="">Select geography type...</option>
+                            <option value="county">County</option>
+                            <option value="zip">ZIP Code (ZCTA)</option>
+                            <option value="tract">Census Tract</option>
+                            <option value="place">Place/City</option>
+                            <option value="state">State</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="joinColumn">Geography ID Column:</label>
+                        <select id="joinColumn">
+                            <option value="">Select column...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dataColumn">Data Column (for choropleth):</label>
+                        <select id="dataColumn">
+                            <option value="">Select column...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="stateFilter">State Filter (optional):</label>
+                        <select id="stateFilter">
+                            <option value="">All states</option>
+                        </select>
+                    </div>
+
+                    <button id="processBtn" class="btn btn-primary">Process Data</button>
+                </div>
+            </div>
+
+            <div class="step" id="step3">
+                <h2>3. Preview & Export</h2>
+                <div class="preview-panel hidden" id="previewPanel">
+                    <div id="map"></div>
+                    <div class="export-options">
+                        <h3>Export Options</h3>
+                        <button id="exportGeoJSON" class="btn btn-export">Export as GeoJSON</button>
+                        <button id="exportShapefile" class="btn btn-export">Export as Shapefile (ZIP)</button>
+                        <button id="exportArcGIS" class="btn btn-export btn-primary">Upload to ArcGIS Online</button>
+                    </div>
+                    <div class="stats" id="stats"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Processing your data...</p>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/shpwrite@0.3.2/shpwrite.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
