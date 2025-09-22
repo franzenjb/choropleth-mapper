@@ -13,7 +13,7 @@ class ChoroplethMapper {
     
     showVersion() {
         // This will be updated automatically on each build
-        const buildTime = 'Sep 22, 2025 02:31 PM ET';
+        const buildTime = 'Sep 22, 2025 03:31 PM ET';
         const versionDiv = document.getElementById('versionInfo');
         if (versionDiv) {
             if (buildTime === 'BUILD_TIMESTAMP') {
@@ -60,6 +60,24 @@ class ChoroplethMapper {
         document.getElementById('exportGeoJSON').addEventListener('click', () => this.exportGeoJSON());
         document.getElementById('exportShapefile').addEventListener('click', () => this.exportShapefile());
         document.getElementById('exportArcGIS').addEventListener('click', () => this.exportToArcGIS());
+        
+        // Add zoom to features button
+        const zoomBtn = document.getElementById('zoomToFeatures');
+        if (zoomBtn) {
+            zoomBtn.addEventListener('click', () => {
+                if (this.currentLayer && this.map) {
+                    const bounds = this.currentLayer.getBounds();
+                    if (bounds.isValid()) {
+                        this.map.invalidateSize();
+                        this.map.fitBounds(bounds, {
+                            padding: [50, 50],
+                            maxZoom: 10
+                        });
+                        console.log('Zoomed to features');
+                    }
+                }
+            });
+        }
         
         document.getElementById('geoLevel').addEventListener('change', (e) => {
             this.updateJoinColumnSuggestions(e.target.value);
@@ -543,7 +561,34 @@ class ChoroplethMapper {
             }
         }).addTo(this.map);
         
-        this.map.fitBounds(this.currentLayer.getBounds());
+        // Zoom to fit the loaded features with proper padding
+        const bounds = this.currentLayer.getBounds();
+        console.log('Layer bounds:', bounds);
+        console.log('Bounds valid?', bounds.isValid());
+        
+        if (bounds.isValid()) {
+            console.log('Fitting to bounds:', bounds.toBBoxString());
+            // Force the map to fit bounds after a short delay to ensure rendering is complete
+            setTimeout(() => {
+                this.map.invalidateSize();
+                this.map.fitBounds(bounds, {
+                    padding: [50, 50],
+                    maxZoom: 10
+                });
+                console.log('Map center after fitBounds:', this.map.getCenter());
+                console.log('Map zoom after fitBounds:', this.map.getZoom());
+            }, 500);  // Increased delay to ensure map is fully rendered
+        } else {
+            console.warn('Invalid bounds for layer, using default view');
+            // For Florida counties, use a reasonable default
+            if (this.mergedData.features.length > 0) {
+                const firstFeature = this.mergedData.features[0];
+                if (firstFeature.properties.STATE === '12' || firstFeature.properties.STATEFP === '12') {
+                    // Florida bounds
+                    this.map.fitBounds([[24.396308, -87.634938], [31.000968, -79.974306]]);
+                }
+            }
+        }
         
         const legend = L.control({position: 'bottomright'});
         legend.onAdd = () => {

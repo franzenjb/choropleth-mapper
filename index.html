@@ -13,6 +13,43 @@
         <header>
             <h1>Choropleth Mapper</h1>
             <p>Transform your CSV data into ArcGIS-ready choropleth maps</p>
+            <div style="background: #f0f8ff; border: 2px solid #0066cc; padding: 15px; margin: 20px 0; border-radius: 8px;">
+                <h3 style="margin-top: 0; color: #0066cc;">📋 How to Format Your CSV:</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div>
+                        <strong>For Counties:</strong>
+                        <ul style="margin: 5px 0;">
+                            <li>Column name: <code style="background: #fff; padding: 2px 5px;">GEOID</code></li>
+                            <li>Format: 5-digit FIPS (12001, 12003)</li>
+                            <li>Example: 12001 = Alachua County, FL</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>For ZIP Codes:</strong>
+                        <ul style="margin: 5px 0;">
+                            <li>Column name: <code style="background: #fff; padding: 2px 5px;">ZIP</code></li>
+                            <li>Format: 5-digit ZIP (32003, 32034)</li>
+                            <li>Example: 32003 = Fleming Island, FL</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>For Places/Cities:</strong>
+                        <ul style="margin: 5px 0;">
+                            <li>Column name: <code style="background: #fff; padding: 2px 5px;">GEOID</code></li>
+                            <li>Format: 7-digit place code</li>
+                            <li>Example: 1200950 = Jacksonville, FL</li>
+                        </ul>
+                    </div>
+                </div>
+                <p style="margin: 10px 0 5px; color: #d9534f;"><strong>⚠️ IMPORTANT:</strong> Your ID column MUST be named exactly as shown above!</p>
+                <p style="margin: 5px 0; color: #5cb85c;"><strong>✅ Output:</strong> Creates GeoJSON/Shapefile ready for direct import into ArcGIS Online or ArcGIS Pro</p>
+                <div style="margin-top: 10px;">
+                    <strong>📥 Download Example CSVs:</strong>
+                    <a href="#" onclick="downloadExampleCSV('county'); return false;" style="margin: 0 10px;">Counties</a> |
+                    <a href="#" onclick="downloadExampleCSV('zip'); return false;" style="margin: 0 10px;">ZIP Codes</a> |
+                    <a href="#" onclick="downloadExampleCSV('place'); return false;" style="margin: 0 10px;">Places</a>
+                </div>
+            </div>
         </header>
 
         <div class="workflow">
@@ -75,10 +112,14 @@
                 <div class="preview-panel hidden" id="previewPanel">
                     <div id="map"></div>
                     <div class="export-options">
-                        <h3>Export Options</h3>
-                        <button id="exportGeoJSON" class="btn btn-export">Export as GeoJSON</button>
-                        <button id="exportShapefile" class="btn btn-export">Export as Shapefile (ZIP)</button>
-                        <button id="exportArcGIS" class="btn btn-export btn-primary">Upload to ArcGIS Online</button>
+                        <h3>Export for ArcGIS</h3>
+                        <p style="margin: 5px 0 10px; color: #666;">Your choropleth map with joined data, ready for ArcGIS:</p>
+                        <button id="exportGeoJSON" class="btn btn-export">📄 Export as GeoJSON</button>
+                        <button id="exportShapefile" class="btn btn-export">📦 Export as Shapefile (ZIP)</button>
+                        <button id="exportArcGIS" class="btn btn-export btn-primary">☁️ Upload to ArcGIS Online</button>
+                        <hr style="margin: 15px 0;">
+                        <button id="zoomToFeatures" class="btn btn-export" style="background: #4CAF50;">🔍 Zoom to Features</button>
+                        <p style="margin: 5px 0; font-size: 12px; color: #666;">Click if map shows ocean instead of your data</p>
                     </div>
                     <div class="stats" id="stats"></div>
                 </div>
@@ -98,5 +139,45 @@
     <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/shpwrite@0.3.2/shpwrite.min.js"></script>
     <script src="app.js"></script>
+    <script>
+        function downloadExampleCSV(type) {
+            let content = '';
+            let filename = '';
+            
+            if (type === 'county') {
+                filename = 'example_counties.csv';
+                content = `GEOID,County,Population,UnemploymentRate
+12001,Alachua County,278468,3.2
+12003,Baker County,29210,4.1
+12005,Bay County,175216,3.8
+12007,Bradford County,28303,5.2
+12009,Brevard County,601942,3.5`;
+            } else if (type === 'zip') {
+                filename = 'example_zipcodes.csv';
+                content = `ZIP,Location,Households,PercentALICE
+32003,Fleming Island,8234,28.5
+32034,Fernandina Beach,6123,22.1
+32043,Green Cove Springs,4567,35.2
+32065,Orange Park,9876,31.4
+32073,Orange Park,7654,26.8`;
+            } else if (type === 'place') {
+                filename = 'example_places.csv';
+                content = `GEOID,Place,Population,MedianIncome
+1200950,Jacksonville,954614,54701
+1214250,Clearwater,117292,48183
+1216475,Coral Springs,134394,77453
+1224000,Fort Lauderdale,182760,59904
+1235000,Hialeah,223109,40165`;
+            }
+            
+            const blob = new Blob([content], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
 </body>
 </html>
