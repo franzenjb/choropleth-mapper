@@ -190,6 +190,24 @@ class ChoroplethMapper {
         const year = '2023';
         let url = '';
         
+        // For ZIP codes, use a different service that works better
+        if (geoLevel === 'zip') {
+            // Use a public GeoJSON file for ZIP codes (Florida only for now)
+            if (!stateFilter || stateFilter === 'FL') {
+                url = 'https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/fl_florida_zip_codes_geo.min.json';
+                try {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        this.geoData = await response.json();
+                        console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes from GitHub`);
+                        return;
+                    }
+                } catch (error) {
+                    console.log('GitHub ZIP source failed, trying ArcGIS');
+                }
+            }
+        }
+        
         const baseUrl = 'https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services';
         
         const endpoints = {
@@ -380,7 +398,7 @@ class ChoroplethMapper {
         
         const geoIdFields = {
             'county': ['GEOID', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
-            'zip': ['ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10', 'ZCTA5CE', 'GEOID'],
+            'zip': ['ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10', 'ZCTA5CE', 'GEOID', 'ZCTA5', 'ZIP', 'ZIPCODE'],
             'tract': ['GEOID', 'TRACTCE', 'FIPS', 'TRACT'],
             'place': ['GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
             'state': ['STUSPS', 'STATE_NAME', 'STATE_ABBR', 'STATE', 'STATEFP']
