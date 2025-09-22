@@ -155,11 +155,18 @@ class ChoroplethMapper {
         const geoLevel = document.getElementById('geoLevel').value;
         const joinColumn = document.getElementById('joinColumn').value;
         const dataColumn = document.getElementById('dataColumn').value;
-        const stateFilter = document.getElementById('stateFilter').value;
+        let stateFilter = document.getElementById('stateFilter').value;
         
         if (!geoLevel || !joinColumn || !dataColumn) {
             this.showError('Please select all required fields');
             return;
+        }
+        
+        // ZIP codes don't support state filtering well
+        if (geoLevel === 'zip' && stateFilter) {
+            this.showError('Note: State filtering is not available for ZIP codes. Please filter your CSV data by state before uploading, or select "All states" to continue.');
+            stateFilter = ''; // Clear state filter for ZIP codes
+            document.getElementById('stateFilter').value = '';
         }
         
         this.showLoading(true);
@@ -197,7 +204,18 @@ class ChoroplethMapper {
         
         let where = '1=1';
         if (stateFilter && geoLevel !== 'state') {
-            where = `STATE_NAME = '${this.getStateName(stateFilter)}' OR STUSPS = '${stateFilter}'`;
+            // Different geography types use different field names for state
+            if (geoLevel === 'zip') {
+                // ZIP codes - no state filter, handled in processData
+                where = '1=1';
+            } else if (geoLevel === 'tract') {
+                // Census tracts use different field names
+                const stateFips = this.getStateFips(stateFilter);
+                where = `STATE = '${stateFips}' OR STATEFP = '${stateFips}'`;
+            } else {
+                // Counties and places use STATE_NAME or STUSPS
+                where = `STATE_NAME = '${this.getStateName(stateFilter)}' OR STUSPS = '${stateFilter}' OR STATE_ABBR = '${stateFilter}'`;
+            }
         }
         
         const params = new URLSearchParams({
