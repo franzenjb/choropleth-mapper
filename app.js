@@ -228,35 +228,72 @@ class ChoroplethMapper {
         });
         
         try {
+            console.log(`Fetching from: ${url}?${params.toString()}`);
             const response = await fetch(`${url}?${params}`);
+            
             if (!response.ok) {
+                console.error(`ArcGIS API failed with status: ${response.status} ${response.statusText}`);
                 throw new Error(`Failed to fetch geographic data: ${response.statusText}`);
             }
-            this.geoData = await response.json();
+            
+            const responseText = await response.text();
+            try {
+                this.geoData = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Failed to parse ArcGIS response:', parseError);
+                console.error('Response text:', responseText.substring(0, 500));
+                throw new Error('Invalid JSON response from ArcGIS service');
+            }
             
             if (!this.geoData || !this.geoData.features || this.geoData.features.length === 0) {
+                console.log('No features from ArcGIS, trying Census TIGER...');
                 const tigerUrl = this.getTigerUrl(geoLevel, year, stateFilter);
+                console.log(`Fetching from TIGER: ${tigerUrl}`);
+                
                 const tigerResponse = await fetch(tigerUrl);
                 if (!tigerResponse.ok) {
+                    console.error(`TIGER API failed with status: ${tigerResponse.status}`);
                     throw new Error('Failed to fetch from Census TIGER service');
                 }
-                this.geoData = await tigerResponse.json();
+                
+                const tigerText = await tigerResponse.text();
+                try {
+                    this.geoData = JSON.parse(tigerText);
+                } catch (parseError) {
+                    console.error('Failed to parse TIGER response:', parseError);
+                    console.error('Response text:', tigerText.substring(0, 500));
+                    throw new Error('Invalid JSON response from TIGER service');
+                }
                 
                 if (!this.geoData || !this.geoData.features) {
+                    console.error('TIGER response has no features:', this.geoData);
                     throw new Error('Invalid geographic data received from service');
                 }
             }
         } catch (error) {
-            console.error('Primary fetch failed, trying Census TIGER:', error);
-            const tigerUrl = this.getTigerUrl(geoLevel, year, stateFilter);
-            const response = await fetch(tigerUrl);
-            if (!response.ok) {
-                throw new Error('Failed to fetch geographic boundaries from both services');
-            }
-            this.geoData = await response.json();
+            console.error('Primary fetch failed, error details:', error);
             
-            if (!this.geoData || !this.geoData.features) {
-                throw new Error('Unable to fetch valid geographic boundaries. Please try again or select a different geography level.');
+            // Try fallback to TIGER
+            try {
+                const tigerUrl = this.getTigerUrl(geoLevel, year, stateFilter);
+                console.log(`Fallback to TIGER: ${tigerUrl}`);
+                
+                const response = await fetch(tigerUrl);
+                if (!response.ok) {
+                    console.error(`TIGER fallback failed with status: ${response.status}`);
+                    throw new Error('Failed to fetch geographic boundaries from both services');
+                }
+                
+                const responseText = await response.text();
+                this.geoData = JSON.parse(responseText);
+                
+                if (!this.geoData || !this.geoData.features) {
+                    console.error('TIGER fallback has no features:', this.geoData);
+                    throw new Error('Unable to fetch valid geographic boundaries. Please try again or select a different geography level.');
+                }
+            } catch (fallbackError) {
+                console.error('Both services failed:', fallbackError);
+                throw new Error('Unable to fetch geographic boundaries. Please check your internet connection and try again.');
             }
         }
     }
@@ -330,21 +367,27 @@ class ChoroplethMapper {
             throw new Error('No geographic data available. Please try processing again.');
         }
         
+        console.log(`Starting merge: ${this.geoData.features.length} geographic features`);
+        console.log('Sample feature properties:', this.geoData.features[0]?.properties);
+        
         const csvMap = new Map();
         this.csvData.forEach(row => {
             const key = String(row[joinColumn]).trim();
             csvMap.set(key, row);
         });
         
+        console.log(`CSV data: ${csvMap.size} rows, sample keys:`, Array.from(csvMap.keys()).slice(0, 5));
+        
         const geoIdFields = {
-            'county': ['GEOID', 'FIPS', 'COUNTYFP'],
-            'zip': ['ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10'],
-            'tract': ['GEOID', 'TRACTCE', 'FIPS'],
-            'place': ['GEOID', 'PLACEFP', 'PLACE_FIPS'],
-            'state': ['STUSPS', 'STATE_NAME', 'STATE_ABBR']
+            'county': ['GEOID', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
+            'zip': ['ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10', 'ZCTA5CE', 'GEOID'],
+            'tract': ['GEOID', 'TRACTCE', 'FIPS', 'TRACT'],
+            'place': ['GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
+            'state': ['STUSPS', 'STATE_NAME', 'STATE_ABBR', 'STATE', 'STATEFP']
         };
         
         const possibleFields = geoIdFields[geoLevel] || ['GEOID', 'FIPS'];
+        console.log(`Looking for fields: ${possibleFields.join(', ')}`);
         
         this.mergedData = {
             type: 'FeatureCollection',
@@ -353,8 +396,9 @@ class ChoroplethMapper {
         
         let matchCount = 0;
         let noMatchCount = 0;
+        let sampleUnmatched = [];
         
-        this.geoData.features.forEach(feature => {
+        this.geoData.features.forEach((feature, index) => {
             let matched = false;
             let csvRecord = null;
             
@@ -397,13 +441,27 @@ class ChoroplethMapper {
                 matchCount++;
             } else {
                 noMatchCount++;
+                if (sampleUnmatched.length < 5 && feature.properties) {
+                    const sampleIds = {};
+                    possibleFields.forEach(field => {
+                        if (feature.properties[field]) {
+                            sampleIds[field] = feature.properties[field];
+                        }
+                    });
+                    sampleUnmatched.push(sampleIds);
+                }
             }
         });
         
         console.log(`Matched: ${matchCount}, No match: ${noMatchCount}`);
+        if (sampleUnmatched.length > 0) {
+            console.log('Sample unmatched geographic IDs:', sampleUnmatched);
+        }
         
         if (matchCount === 0) {
-            throw new Error('No matches found. Please check that your join column contains valid geography identifiers.');
+            console.error('No matches found!');
+            console.error('Available geographic fields in first feature:', Object.keys(this.geoData.features[0]?.properties || {}));
+            throw new Error('No matches found. Please check that your join column contains valid geography identifiers. Check the browser console for details.');
         }
     }
 
