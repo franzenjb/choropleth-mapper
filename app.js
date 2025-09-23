@@ -266,8 +266,11 @@ class ChoroplethMapper {
                 // Census tracts and sub-counties use different field names
                 const stateFips = this.getStateFips(stateFilter);
                 where = `STATE = '${stateFips}' OR STATEFP = '${stateFips}'`;
+            } else if (geoLevel === 'place') {
+                // Places use ST field for state abbreviation
+                where = `ST = '${stateFilter}'`;
             } else {
-                // Counties and places use STATE_NAME or STUSPS
+                // Counties use STATE_NAME or STUSPS
                 where = `STATE_NAME = '${this.getStateName(stateFilter)}' OR STUSPS = '${stateFilter}' OR STATE_ABBR = '${stateFilter}'`;
             }
         }
@@ -438,7 +441,7 @@ class ChoroplethMapper {
             'subcounty': ['GEOID', 'COUSUBFP', 'COUSUBNS', 'COUSUB', 'CCD'],
             'zip': ['ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10', 'ZCTA5CE', 'GEOID', 'ZCTA5', 'ZIP', 'ZIPCODE'],
             'tract': ['GEOID', 'TRACTCE', 'FIPS', 'TRACT'],
-            'place': ['GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
+            'place': ['PLACEFIPS', 'GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
             'state': ['STUSPS', 'STATE_NAME', 'STATE_ABBR', 'STATE', 'STATEFP']
         };
         

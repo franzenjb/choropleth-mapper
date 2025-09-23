@@ -3,146 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Choropleth Mapper - CSV to ArcGIS</title>
+    <title>Choropleth Mapper - Professional Data Visualization Tool</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="version-info" id="versionInfo"></div>
-        <header>
-            <h1>Choropleth Mapper</h1>
-            <p>Transform your CSV data into ArcGIS-ready choropleth maps</p>
-            <div style="background: #f0f8ff; border: 2px solid #0066cc; padding: 15px; margin: 20px 0; border-radius: 8px; color: #333;">
-                <h3 style="margin-top: 0; color: #0066cc;">📋 How to Format Your CSV:</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+    <div class="app-container">
+        <div class="container">
+            <div class="version-info" id="versionInfo"></div>
+            
+            <!-- Professional Header with Red Cross Branding -->
+            <header class="app-header">
+                <div class="header-brand">
+                    <div class="brand-logo">+</div>
                     <div>
-                        <strong style="color: #333;">For Counties:</strong>
-                        <ul style="margin: 5px 0; color: #333;">
-                            <li>Column name: <code style="background: #fff; padding: 2px 5px; color: #d73502;">GEOID</code></li>
-                            <li>Format: 5-digit FIPS (12001, 12003)</li>
-                            <li>Example: 12001 = Alachua County, FL</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong style="color: #333;">For Sub-Counties (CCDs):</strong>
-                        <ul style="margin: 5px 0; color: #333;">
-                            <li>Column name: <code style="background: #fff; padding: 2px 5px; color: #d73502;">GEOID</code></li>
-                            <li>Format: 10-digit CCD codes</li>
-                            <li>Example: 1200191248 = Gainesville CCD</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong style="color: #333;">For ZIP Codes:</strong>
-                        <ul style="margin: 5px 0; color: #333;">
-                            <li>Column name: <code style="background: #fff; padding: 2px 5px; color: #d73502;">ZIP</code></li>
-                            <li>Format: 5-digit ZIP (32003, 32034)</li>
-                            <li>Example: 32003 = Fleming Island, FL</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong style="color: #333;">For Places/Cities:</strong>
-                        <ul style="margin: 5px 0; color: #333;">
-                            <li>Column name: <code style="background: #fff; padding: 2px 5px; color: #d73502;">GEOID</code></li>
-                            <li>Format: 7-digit place code</li>
-                            <li>Example: 1200950 = Jacksonville, FL</li>
-                        </ul>
+                        <h1 class="brand-title">Choropleth Mapper</h1>
+                        <p class="brand-subtitle">Professional Geographic Data Visualization Platform</p>
                     </div>
                 </div>
-                <p style="margin: 10px 0 5px; color: #d9534f;"><strong>⚠️ IMPORTANT:</strong> Your ID column MUST be named exactly as shown above!</p>
-                <p style="margin: 5px 0; color: #5cb85c;"><strong>✅ Output:</strong> Creates GeoJSON/Shapefile ready for direct import into ArcGIS Online or ArcGIS Pro</p>
-                <div style="margin-top: 10px; color: #333;">
-                    <strong style="color: #333;">📥 Download Example CSVs:</strong>
-                    <a href="#" onclick="downloadExampleCSV('county'); return false;" style="margin: 0 10px; color: #0066cc;">Counties</a> |
-                    <a href="#" onclick="downloadExampleCSV('zip'); return false;" style="margin: 0 10px; color: #0066cc;">ZIP Codes</a> |
-                    <a href="#" onclick="downloadExampleCSV('place'); return false;" style="margin: 0 10px; color: #0066cc;">Places</a>
+                
+                <!-- Enhanced Instructions Panel -->
+                <div class="instructions-panel">
+                    <h3 class="instructions-title">
+                        <svg class="instructions-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="9" x2="15" y2="9"></line>
+                            <line x1="9" y1="13" x2="15" y2="13"></line>
+                            <line x1="9" y1="17" x2="13" y2="17"></line>
+                        </svg>
+                        Data Formatting Requirements
+                    </h3>
+                    
+                    <div class="instructions-grid">
+                        <div class="instruction-item">
+                            <div class="instruction-title">County Analysis</div>
+                            <ul class="instruction-list">
+                                <li>Column name: <span class="code-snippet">GEOID</span></li>
+                                <li>Format: 5-digit FIPS codes</li>
+                                <li>Example: 12001 = Alachua County, FL</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="instruction-item">
+                            <div class="instruction-title">Sub-County (CCDs)</div>
+                            <ul class="instruction-list">
+                                <li>Column name: <span class="code-snippet">GEOID</span></li>
+                                <li>Format: 10-digit CCD codes</li>
+                                <li>Example: 1200191248 = Gainesville CCD</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="instruction-item">
+                            <div class="instruction-title">ZIP Code Territories</div>
+                            <ul class="instruction-list">
+                                <li>Column name: <span class="code-snippet">ZIP</span></li>
+                                <li>Format: 5-digit ZIP codes</li>
+                                <li>Example: 32003 = Fleming Island, FL</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="instruction-item">
+                            <div class="instruction-title">Cities & Places</div>
+                            <ul class="instruction-list">
+                                <li>Column name: <span class="code-snippet">GEOID</span></li>
+                                <li>Format: 7-digit place codes</li>
+                                <li>Example: 1200950 = Jacksonville, FL</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="instructions-footer">
+                        <div class="download-links">
+                            <strong style="margin-right: 1rem;">Sample Data:</strong>
+                            <a href="#" onclick="downloadExampleCSV('county'); return false;" class="download-link">Counties</a>
+                            <a href="#" onclick="downloadExampleCSV('zip'); return false;" class="download-link">ZIP Codes</a>
+                            <a href="#" onclick="downloadExampleCSV('place'); return false;" class="download-link">Places</a>
+                        </div>
+                        <div class="instructions-note">
+                            Output: GeoJSON/Shapefile ready for ArcGIS Online or ArcGIS Pro
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Workflow Section -->
+            <div class="workflow-container">
+                <!-- Step 1: Data Upload -->
+                <div class="workflow-step" id="step1">
+                    <div class="step-header">
+                        <h2 class="step-title">
+                            <span class="step-number">1</span>
+                            Upload Data Source
+                        </h2>
+                    </div>
+                    <div class="step-content">
+                        <div class="upload-area" id="uploadArea">
+                            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p class="upload-text">Drop CSV file here or click to browse</p>
+                            <p class="upload-subtext">Supports CSV files up to 50MB</p>
+                            <input type="file" id="csvInput" accept=".csv" hidden>
+                        </div>
+                        <div id="fileInfo" class="file-info hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Configuration -->
+                <div class="workflow-step" id="step2">
+                    <div class="step-header">
+                        <h2 class="step-title">
+                            <span class="step-number">2</span>
+                            Configure Geography Settings
+                        </h2>
+                    </div>
+                    <div class="step-content">
+                        <div class="hidden" id="configPanel">
+                            <div class="form-group">
+                                <label for="geoLevel" class="form-label">Geographic Level</label>
+                                <select id="geoLevel" class="form-select">
+                                    <option value="">Select geography type...</option>
+                                    <option value="county">County</option>
+                                    <option value="subcounty">Sub-County (CCD)</option>
+                                    <option value="zip">ZIP Code (ZCTA)</option>
+                                    <option value="tract">Census Tract</option>
+                                    <option value="place">Place/City</option>
+                                    <option value="state">State</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="joinColumn" class="form-label">Geography ID Column</label>
+                                <select id="joinColumn" class="form-select">
+                                    <option value="">Select column...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dataColumn" class="form-label">Data Column (for visualization)</label>
+                                <select id="dataColumn" class="form-select">
+                                    <option value="">Select column...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="stateFilter" class="form-label">State Filter (optional)</label>
+                                <select id="stateFilter" class="form-select">
+                                    <option value="">All states</option>
+                                </select>
+                            </div>
+
+                            <button id="processBtn" class="btn btn-primary">Process Data</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Preview & Export -->
+                <div class="workflow-step" id="step3">
+                    <div class="step-header">
+                        <h2 class="step-title">
+                            <span class="step-number">3</span>
+                            Preview & Export Results
+                        </h2>
+                    </div>
+                    <div class="step-content">
+                        <div class="hidden" id="previewPanel">
+                            <div class="map-container">
+                                <div id="map"></div>
+                            </div>
+                            
+                            <div class="export-panel">
+                                <h3 class="export-title">Export for ArcGIS</h3>
+                                <p class="export-description">Your choropleth map with joined data, ready for professional GIS analysis</p>
+                                
+                                <div class="export-buttons">
+                                    <button id="exportGeoJSON" class="btn btn-secondary">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                        </svg>
+                                        Export GeoJSON
+                                    </button>
+                                    
+                                    <button id="exportShapefile" class="btn btn-secondary">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <rect x="7" y="7" width="10" height="10" rx="1" ry="1"></rect>
+                                        </svg>
+                                        Export Shapefile
+                                    </button>
+                                    
+                                    <button id="exportArcGIS" class="btn btn-primary">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+                                        </svg>
+                                        Upload to ArcGIS Online
+                                    </button>
+                                </div>
+                                
+                                <div class="export-divider"></div>
+                                
+                                <button id="zoomToFeatures" class="btn btn-success">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="M21 21l-4.35-4.35"></path>
+                                    </svg>
+                                    Zoom to Features
+                                </button>
+                                <p class="instructions-note" style="margin-top: 0.5rem;">Click if map shows ocean instead of your data</p>
+                            </div>
+                            
+                            <div class="stats-panel" id="stats"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </header>
 
-        <div class="workflow">
-            <div class="step" id="step1">
-                <h2>1. Upload Your Data</h2>
-                <div class="upload-area" id="uploadArea">
-                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    <p>Drag & drop your CSV file here or click to browse</p>
-                    <input type="file" id="csvInput" accept=".csv" hidden>
-                </div>
-                <div id="fileInfo" class="file-info hidden"></div>
+            <!-- Loading Overlay -->
+            <div id="loading" class="loading-overlay hidden">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Processing your data...</p>
             </div>
 
-            <div class="step" id="step2">
-                <h2>2. Configure Geography</h2>
-                <div class="config-panel hidden" id="configPanel">
-                    <div class="form-group">
-                        <label for="geoLevel">Geographic Level:</label>
-                        <select id="geoLevel">
-                            <option value="">Select geography type...</option>
-                            <option value="county">County</option>
-                            <option value="subcounty">Sub-County (CCD)</option>
-                            <option value="zip">ZIP Code (ZCTA)</option>
-                            <option value="tract">Census Tract</option>
-                            <option value="place">Place/City</option>
-                            <option value="state">State</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="joinColumn">Geography ID Column:</label>
-                        <select id="joinColumn">
-                            <option value="">Select column...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="dataColumn">Data Column (for choropleth):</label>
-                        <select id="dataColumn">
-                            <option value="">Select column...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="stateFilter">State Filter (optional):</label>
-                        <select id="stateFilter">
-                            <option value="">All states</option>
-                        </select>
-                    </div>
-
-                    <button id="processBtn" class="btn btn-primary">Process Data</button>
-                </div>
-            </div>
-
-            <div class="step" id="step3">
-                <h2>3. Preview & Export</h2>
-                <div class="preview-panel hidden" id="previewPanel">
-                    <div id="map"></div>
-                    <div class="export-options">
-                        <h3>Export for ArcGIS</h3>
-                        <p style="margin: 5px 0 10px; color: #666;">Your choropleth map with joined data, ready for ArcGIS:</p>
-                        <button id="exportGeoJSON" class="btn btn-export">📄 Export as GeoJSON</button>
-                        <button id="exportShapefile" class="btn btn-export">📦 Export as Shapefile (ZIP)</button>
-                        <button id="exportArcGIS" class="btn btn-export btn-primary">☁️ Upload to ArcGIS Online</button>
-                        <hr style="margin: 15px 0;">
-                        <button id="zoomToFeatures" class="btn btn-export" style="background: #4CAF50;">🔍 Zoom to Features</button>
-                        <p style="margin: 5px 0; font-size: 12px; color: #666;">Click if map shows ocean instead of your data</p>
-                    </div>
-                    <div class="stats" id="stats"></div>
-                </div>
-            </div>
+            <!-- Error Display -->
+            <div id="error" class="error-panel hidden"></div>
         </div>
-
-        <div id="loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p>Processing your data...</p>
-        </div>
-
-        <div id="error" class="error hidden"></div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
