@@ -248,11 +248,16 @@ class ChoroplethMapper {
         try {
             await this.fetchGeographicData(geoLevel, stateFilter);
             this.mergeData(joinColumn, dataColumn);
-            this.createMap();
-            this.displayStats();
             
+            // Show the preview panel BEFORE creating the map
             document.getElementById('previewPanel').classList.remove('hidden');
-            this.showSuccess('Data processed successfully!');
+            
+            // Small delay to ensure the container is rendered
+            setTimeout(() => {
+                this.createMap();
+                this.displayStats();
+                this.showSuccess('Data processed successfully!');
+            }, 100);
         } catch (error) {
             this.showError('Error processing data: ' + error.message);
         } finally {
@@ -626,12 +631,60 @@ class ChoroplethMapper {
         const min = Math.min(...values);
         const max = Math.max(...values);
         
+        // Get user selections for legend
+        const classCount = parseInt(document.getElementById('classCount')?.value || '5');
+        const colorScheme = document.getElementById('colorScheme')?.value || 'reds';
+        const classMethod = document.getElementById('classMethod')?.value || 'quantile';
+        
+        // Color schemes
+        const colorSchemes = {
+            'reds': ['#fff5f0', '#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#a50f15', '#67000d'],
+            'blues': ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'],
+            'greens': ['#f7fcf5', '#e5f5e0', '#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b'],
+            'purples': ['#fcfbfd', '#efedf5', '#dadaeb', '#bcbddc', '#9e9ac8', '#807dba', '#6a51a3', '#54278f', '#3f007d'],
+            'oranges': ['#fff5eb', '#fee6ce', '#fdd0a2', '#fdae6b', '#fd8d3c', '#f16913', '#d94801', '#a63603', '#7f2704'],
+            'diverging': ['#67001f', '#b2182b', '#d6604d', '#f4a582', '#fddbc7', '#d1e5f0', '#92c5de', '#4393c3', '#2166ac', '#053061']
+        };
+        
+        const selectedColors = colorSchemes[colorScheme] || colorSchemes['reds'];
+        
+        // Create class breaks based on method
+        let breaks = [];
+        if (classMethod === 'quantile') {
+            // Equal count in each class
+            const sortedValues = [...values].sort((a, b) => a - b);
+            for (let i = 0; i <= classCount; i++) {
+                const idx = Math.floor(i * (sortedValues.length - 1) / classCount);
+                breaks.push(sortedValues[idx]);
+            }
+        } else if (classMethod === 'equal') {
+            // Equal intervals
+            const interval = (max - min) / classCount;
+            for (let i = 0; i <= classCount; i++) {
+                breaks.push(min + (interval * i));
+            }
+        } else {
+            // Default to equal for now (Jenks would need more complex algorithm)
+            const interval = (max - min) / classCount;
+            for (let i = 0; i <= classCount; i++) {
+                breaks.push(min + (interval * i));
+            }
+        }
+        
+        // Store breaks for legend
+        this.classBreaks = breaks;
+        this.classColors = selectedColors.slice(0, classCount);
+        
         const getColor = (value) => {
             if (value == null || isNaN(value)) return '#cccccc';
-            const normalized = (value - min) / (max - min);
-            const colors = ['#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c', '#fc4e2a', '#e31a1c', '#b10026'];
-            const index = Math.floor(normalized * (colors.length - 1));
-            return colors[index];
+            
+            // Find which class this value belongs to
+            for (let i = 0; i < breaks.length - 1; i++) {
+                if (value >= breaks[i] && value <= breaks[i + 1]) {
+                    return this.classColors[i] || '#cccccc';
+                }
+            }
+            return this.classColors[this.classColors.length - 1] || '#cccccc';
         };
         
         // Remove old layer if it exists
@@ -690,21 +743,30 @@ class ChoroplethMapper {
         const legend = L.control({position: 'bottomright'});
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'legend');
-            div.innerHTML = `
-                <h4>Legend</h4>
-                <div class="legend-item">
-                    <span class="legend-color" style="background: ${getColor(min)}"></span>
-                    <span>${min.toFixed(2)}</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background: ${getColor((min + max) / 2)}"></span>
-                    <span>${((min + max) / 2).toFixed(2)}</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-color" style="background: ${getColor(max)}"></span>
-                    <span>${max.toFixed(2)}</span>
-                </div>
-            `;
+            let legendHtml = '<h4>Legend</h4>';
+            
+            // Create a legend item for each class
+            for (let i = 0; i < this.classColors.length; i++) {
+                const rangeStart = this.classBreaks[i];
+                const rangeEnd = this.classBreaks[i + 1];
+                
+                // Format the range text
+                let rangeText = '';
+                if (rangeEnd !== undefined) {
+                    rangeText = `${rangeStart.toFixed(0)} - ${rangeEnd.toFixed(0)}`;
+                } else {
+                    rangeText = `${rangeStart.toFixed(0)}+`;
+                }
+                
+                legendHtml += `
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: ${this.classColors[i]}"></span>
+                        <span>${rangeText}</span>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = legendHtml;
             return div;
         };
         legend.addTo(this.map);
