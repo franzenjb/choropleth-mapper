@@ -79,6 +79,26 @@ class ChoroplethMapper {
             });
         }
         
+        // Add update base map button
+        const updateBaseMapBtn = document.getElementById('updateBaseMap');
+        if (updateBaseMapBtn) {
+            updateBaseMapBtn.addEventListener('click', () => {
+                if (this.mergedData) {
+                    // Store current view
+                    const center = this.map.getCenter();
+                    const zoom = this.map.getZoom();
+                    
+                    // Recreate map with new base layer
+                    this.createMap();
+                    
+                    // Restore view
+                    this.map.setView(center, zoom);
+                    
+                    this.showSuccess('Base map updated successfully');
+                }
+            });
+        }
+        
         document.getElementById('geoLevel').addEventListener('change', (e) => {
             this.updateJoinColumnSuggestions(e.target.value);
         });
@@ -620,9 +640,43 @@ class ChoroplethMapper {
         
         this.map = L.map('map').setView([39.8283, -98.5795], 4);
         
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
+        // Get selected base map
+        const baseMapType = document.getElementById('baseMap')?.value || 'light';
+        
+        // Base map options
+        const baseMaps = {
+            'light': {
+                url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                attribution: '© OpenStreetMap contributors'
+            },
+            'dark': {
+                url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                attribution: '© OpenStreetMap contributors © CARTO'
+            },
+            'satellite': {
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                attribution: '© Esri'
+            },
+            'terrain': {
+                url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                attribution: '© OpenStreetMap contributors, © OpenTopoMap'
+            },
+            'none': null
+        };
+        
+        // Remove existing base layer if it exists
+        if (this.baseLayer) {
+            this.map.removeLayer(this.baseLayer);
+            this.baseLayer = null;
+        }
+        
+        // Add selected base map
+        if (baseMapType !== 'none' && baseMaps[baseMapType]) {
+            this.baseLayer = L.tileLayer(baseMaps[baseMapType].url, {
+                attribution: baseMaps[baseMapType].attribution
+            });
+            this.baseLayer.addTo(this.map);
+        }
         
         const values = this.mergedData.features
             .map(f => f.properties.choropleth_value)
