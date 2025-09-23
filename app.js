@@ -13,7 +13,7 @@ class ChoroplethMapper {
     
     showVersion() {
         // This will be updated automatically on each build
-        const buildTime = 'Sep 22, 2025 03:31 PM ET';
+        const buildTime = 'Sep 23, 2025 01:26 PM ET';
         const versionDiv = document.getElementById('versionInfo');
         if (versionDiv) {
             if (buildTime === 'BUILD_TIMESTAMP') {
