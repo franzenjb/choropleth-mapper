@@ -90,6 +90,15 @@ class ChoroplethMapper {
             return;
         }
         
+        // Clear any existing map when new file is uploaded
+        if (this.currentLayer && this.map) {
+            this.map.removeLayer(this.currentLayer);
+            this.currentLayer = null;
+        }
+        
+        // Hide preview panel when new file is loaded
+        document.getElementById('previewPanel').classList.add('hidden');
+        
         const fileInfo = document.getElementById('fileInfo');
         fileInfo.innerHTML = `
             <strong>File:</strong> ${file.name}<br>
@@ -624,6 +633,12 @@ class ChoroplethMapper {
             const index = Math.floor(normalized * (colors.length - 1));
             return colors[index];
         };
+        
+        // Remove old layer if it exists
+        if (this.currentLayer) {
+            this.map.removeLayer(this.currentLayer);
+            this.currentLayer = null;
+        }
         
         this.currentLayer = L.geoJSON(this.mergedData, {
             style: (feature) => ({
