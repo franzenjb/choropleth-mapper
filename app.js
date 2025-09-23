@@ -285,7 +285,86 @@ class ChoroplethMapper {
         }
     }
 
+    detectStatesFromData() {
+        const states = new Set();
+        const joinColumn = document.getElementById('joinColumn').value;
+        
+        if (this.csvData && joinColumn) {
+            this.csvData.forEach(row => {
+                const value = row[joinColumn];
+                // Extract state FIPS from county FIPS (first 2 digits)
+                if (value && value.length >= 2) {
+                    const fipsStr = value.toString().trim();
+                    if (fipsStr.match(/^\d{4,5}$/)) {
+                        const stateFips = fipsStr.padStart(5, '0').substring(0, 2);
+                        if (stateFips >= '01' && stateFips <= '72') {
+                            states.add(stateFips);
+                        }
+                    }
+                }
+            });
+        }
+        
+        return states;
+    }
+    
+    getStateAbbrevFromFips(fipsCode) {
+        const stateMap = {
+            '01': 'AL', '02': 'AK', '04': 'AZ', '05': 'AR', '06': 'CA',
+            '08': 'CO', '09': 'CT', '10': 'DE', '11': 'DC', '12': 'FL',
+            '13': 'GA', '15': 'HI', '16': 'ID', '17': 'IL', '18': 'IN',
+            '19': 'IA', '20': 'KS', '21': 'KY', '22': 'LA', '23': 'ME',
+            '24': 'MD', '25': 'MA', '26': 'MI', '27': 'MN', '28': 'MS',
+            '29': 'MO', '30': 'MT', '31': 'NE', '32': 'NV', '33': 'NH',
+            '34': 'NJ', '35': 'NM', '36': 'NY', '37': 'NC', '38': 'ND',
+            '39': 'OH', '40': 'OK', '41': 'OR', '42': 'PA', '44': 'RI',
+            '45': 'SC', '46': 'SD', '47': 'TN', '48': 'TX', '49': 'UT',
+            '50': 'VT', '51': 'VA', '53': 'WA', '54': 'WV', '55': 'WI',
+            '56': 'WY', '72': 'PR'
+        };
+        return stateMap[fipsCode];
+    }
+
     async fetchGeographicData(geoLevel, stateFilter) {
+        // If no state filter selected, detect states from FIPS codes and fetch each
+        if (!stateFilter && geoLevel === 'county') {
+            const detectedStates = this.detectStatesFromData();
+            if (detectedStates.size > 0 && detectedStates.size <= 10) {
+                console.log(`Detected ${detectedStates.size} states from FIPS codes:`, Array.from(detectedStates));
+                const allFeatures = [];
+                
+                for (const stateFips of detectedStates) {
+                    const stateAbbr = this.getStateAbbrevFromFips(stateFips);
+                    if (stateAbbr) {
+                        console.log(`Fetching boundaries for ${stateAbbr} (FIPS: ${stateFips})...`);
+                        try {
+                            await this.fetchSingleStateData(geoLevel, stateAbbr);
+                            if (this.geoData && this.geoData.features) {
+                                allFeatures.push(...this.geoData.features);
+                                console.log(`  Added ${this.geoData.features.length} features from ${stateAbbr}`);
+                            }
+                        } catch (error) {
+                            console.error(`  Failed to fetch ${stateAbbr}:`, error.message);
+                        }
+                    }
+                }
+                
+                if (allFeatures.length > 0) {
+                    this.geoData = {
+                        type: 'FeatureCollection',
+                        features: allFeatures
+                    };
+                    console.log(`Total features loaded: ${allFeatures.length} counties from ${detectedStates.size} states`);
+                    return;
+                }
+            }
+        }
+        
+        // Single state or default fetch
+        await this.fetchSingleStateData(geoLevel, stateFilter);
+    }
+    
+    async fetchSingleStateData(geoLevel, stateFilter) {
         const year = '2023';
         let url = '';
         
