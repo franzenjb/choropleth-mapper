@@ -134,6 +134,7 @@ class ChoroplethMapper {
         const columns = Object.keys(this.csvData[0]);
         const suggestions = {
             'county': ['FIPS', 'fips', 'county_fips', 'GEOID', 'geoid'],
+            'subcounty': ['GEOID', 'geoid', 'GEO id2', 'CCD', 'ccd_fips'],
             'zip': ['ZIP', 'zip', 'zipcode', 'ZIP_CODE', 'ZCTA', 'zcta'],
             'tract': ['FIPS', 'fips', 'tract', 'GEOID', 'geoid'],
             'place': ['place', 'city', 'town', 'GEOID', 'geoid'],
@@ -246,6 +247,7 @@ class ChoroplethMapper {
         
         const endpoints = {
             'county': `/USA_Counties_Generalized_Boundaries/FeatureServer/0`,
+            'subcounty': `/USA_County_Subdivisions/FeatureServer/0`,
             'zip': `/USA_ZIP_Code_Tabulation_Areas_ZCTA5_2020/FeatureServer/0`,
             'tract': `/USA_Census_Tracts/FeatureServer/0`,
             'place': `/USA_Census_Populated_Places/FeatureServer/0`,
@@ -260,8 +262,8 @@ class ChoroplethMapper {
             if (geoLevel === 'zip') {
                 // ZIP codes - no state filter, handled in processData
                 where = '1=1';
-            } else if (geoLevel === 'tract') {
-                // Census tracts use different field names
+            } else if (geoLevel === 'tract' || geoLevel === 'subcounty') {
+                // Census tracts and sub-counties use different field names
                 const stateFips = this.getStateFips(stateFilter);
                 where = `STATE = '${stateFips}' OR STATEFP = '${stateFips}'`;
             } else {
@@ -355,6 +357,7 @@ class ChoroplethMapper {
         
         const tigerEndpoints = {
             'county': `/State_County/MapServer/1`,
+            'subcounty': `/Places_CouSub_ConCity_SubMCD/MapServer/1`,
             'zip': `/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/2`,
             'tract': `/Tracts_Blocks/MapServer/0`,
             'place': `/Places_CouSub_ConCity_SubMCD/MapServer/0`,
@@ -432,6 +435,7 @@ class ChoroplethMapper {
         
         const geoIdFields = {
             'county': ['GEOID', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
+            'subcounty': ['GEOID', 'COUSUBFP', 'COUSUBNS', 'COUSUB', 'CCD'],
             'zip': ['ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10', 'ZCTA5CE', 'GEOID', 'ZCTA5', 'ZIP', 'ZIPCODE'],
             'tract': ['GEOID', 'TRACTCE', 'FIPS', 'TRACT'],
             'place': ['GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],

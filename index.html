@@ -25,6 +25,14 @@
                         </ul>
                     </div>
                     <div>
+                        <strong style="color: #333;">For Sub-Counties (CCDs):</strong>
+                        <ul style="margin: 5px 0; color: #333;">
+                            <li>Column name: <code style="background: #fff; padding: 2px 5px; color: #d73502;">GEOID</code></li>
+                            <li>Format: 10-digit CCD codes</li>
+                            <li>Example: 1200191248 = Gainesville CCD</li>
+                        </ul>
+                    </div>
+                    <div>
                         <strong style="color: #333;">For ZIP Codes:</strong>
                         <ul style="margin: 5px 0; color: #333;">
                             <li>Column name: <code style="background: #fff; padding: 2px 5px; color: #d73502;">ZIP</code></li>
@@ -75,6 +83,7 @@
                         <select id="geoLevel">
                             <option value="">Select geography type...</option>
                             <option value="county">County</option>
+                            <option value="subcounty">Sub-County (CCD)</option>
                             <option value="zip">ZIP Code (ZCTA)</option>
                             <option value="tract">Census Tract</option>
                             <option value="place">Place/City</option>
