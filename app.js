@@ -151,6 +151,25 @@ class ChoroplethMapper {
         }
     }
 
+    checkIfStateRequired() {
+        const geoLevel = document.getElementById('geoLevel').value;
+        const joinColumn = document.getElementById('joinColumn').value;
+        const stateRequiredSpan = document.getElementById('stateRequired');
+        
+        if (geoLevel === 'county' && joinColumn && this.csvData && this.csvData.length > 0) {
+            const firstValue = String(this.csvData[0][joinColumn]).trim();
+            const isUsingNames = isNaN(firstValue) && firstValue.length > 5;
+            
+            if (isUsingNames && stateRequiredSpan) {
+                stateRequiredSpan.style.display = 'inline';
+            } else if (stateRequiredSpan) {
+                stateRequiredSpan.style.display = 'none';
+            }
+        } else if (stateRequiredSpan) {
+            stateRequiredSpan.style.display = 'none';
+        }
+    }
+    
     loadStates() {
         const stateFilter = document.getElementById('stateFilter');
         const states = [
@@ -195,6 +214,17 @@ class ChoroplethMapper {
         if (!geoLevel || !joinColumn || !dataColumn) {
             this.showError('Please select all required fields');
             return;
+        }
+        
+        // Check if using county names - if so, state is REQUIRED
+        if (geoLevel === 'county' && this.csvData && this.csvData.length > 0) {
+            const firstValue = String(this.csvData[0][joinColumn]).trim();
+            const isUsingNames = isNaN(firstValue) && firstValue.length > 5; // Not a FIPS code
+            
+            if (isUsingNames && !stateFilter) {
+                this.showError('State selection is REQUIRED when using county names to avoid ambiguity (e.g., multiple Washington Counties exist)');
+                return;
+            }
         }
         
         // ZIP codes don't support state filtering well
@@ -429,9 +459,25 @@ class ChoroplethMapper {
         console.log('Sample feature properties:', this.geoData.features[0]?.properties);
         
         const csvMap = new Map();
+        const countyNameMap = new Map(); // For county name matching
+        
         this.csvData.forEach(row => {
             const key = String(row[joinColumn]).trim();
             csvMap.set(key, row);
+            
+            // For county-level data, also create name-based lookups
+            if (geoLevel === 'county' && isNaN(key)) {
+                // It's a county name, not a FIPS code
+                const cleanName = key.toUpperCase()
+                    .replace(/\bCOUNTY\b/g, '')
+                    .replace(/\bPARISH\b/g, '')
+                    .replace(/\bBOROUGH\b/g, '')
+                    .trim();
+                countyNameMap.set(cleanName, row);
+                
+                // Also store with "COUNTY" suffix for matching
+                countyNameMap.set(cleanName + ' COUNTY', row);
+            }
         });
         
         console.log(`CSV data: ${csvMap.size} rows, sample keys:`, Array.from(csvMap.keys()).slice(0, 5));
@@ -483,6 +529,35 @@ class ChoroplethMapper {
                         csvRecord = csvMap.get(unpaddedId);
                         matched = true;
                         break;
+                    }
+                }
+            }
+            
+            // For counties, also try name matching if FIPS didn't match
+            if (!matched && geoLevel === 'county' && countyNameMap.size > 0) {
+                const nameFields = ['NAME', 'COUNTY', 'COUNTYNAME', 'COUNTY_NAME', 'NAMELSAD'];
+                for (const field of nameFields) {
+                    if (feature.properties[field]) {
+                        const countyName = String(feature.properties[field]).toUpperCase()
+                            .replace(/\bCOUNTY\b/g, '')
+                            .replace(/\bPARISH\b/g, '')
+                            .replace(/\bBOROUGH\b/g, '')
+                            .trim();
+                        
+                        if (countyNameMap.has(countyName)) {
+                            csvRecord = countyNameMap.get(countyName);
+                            matched = true;
+                            console.log(`Matched by name: ${countyName}`);
+                            break;
+                        }
+                        
+                        // Try with "COUNTY" suffix
+                        if (countyNameMap.has(countyName + ' COUNTY')) {
+                            csvRecord = countyNameMap.get(countyName + ' COUNTY');
+                            matched = true;
+                            console.log(`Matched by name with suffix: ${countyName} COUNTY`);
+                            break;
+                        }
                     }
                 }
             }

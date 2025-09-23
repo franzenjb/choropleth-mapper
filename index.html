@@ -28,9 +28,9 @@
                     
                     <div class="format-section">
                         <h4>Counties</h4>
-                        <p>Column: <code>GEOID</code></p>
-                        <p>Format: 5-digit FIPS</p>
-                        <p>Example: 12001</p>
+                        <p>Column: <code>GEOID</code> or <code>County Name</code></p>
+                        <p>Format: 5-digit FIPS or Name</p>
+                        <p>Examples: 12001, "York County", "York"</p>
                     </div>
                     
                     <div class="format-section">
@@ -158,7 +158,9 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="stateFilter" class="form-label">State Filter (optional)</label>
+                                <label for="stateFilter" class="form-label">
+                                    State Filter <span id="stateRequired" style="color: red; display: none;">(REQUIRED for county names)</span>
+                                </label>
                                 <select id="stateFilter" class="form-select">
                                     <option value="">All states</option>
                                 </select>
