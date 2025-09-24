@@ -68,6 +68,15 @@
                         <p>Example: 12 (Florida)</p>
                     </div>
                     
+                    <div class="format-section" style="border-top: 1px solid #ddd; padding-top: 1rem; margin-top: 1rem;">
+                        <h4 style="color: #28a745;">Auto-Aggregation</h4>
+                        <p><strong>Raw Data Support:</strong></p>
+                        <p>• Automatically counts rows per geography</p>
+                        <p>• Sums numeric values when detected</p>
+                        <p>• No pre-processing needed</p>
+                        <p style="font-size: 0.85rem; color: #666;">Example: 200 individual records with ZIP codes → Automatically creates count per ZIP</p>
+                    </div>
+                    
                     <div class="sidebar-footer">
                         <strong>Sample Files:</strong>
                         <a href="#" onclick="downloadExampleCSV('county'); return false;">Counties</a>
@@ -155,6 +164,9 @@
                                 <select id="dataColumn" class="form-select">
                                     <option value="">Select column...</option>
                                 </select>
+                                <div style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+                                    <span style="color: #28a745;">✓ Auto-aggregation:</span> If multiple rows share the same geography ID, values will be automatically counted or summed
+                                </div>
                             </div>
 
                             <div class="form-group">

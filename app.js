@@ -359,6 +359,192 @@ class ChoroplethMapper {
         }
     }
 
+    getZipRangesForState(stateAbbr) {
+        // Complete ZIP code prefix ranges by state (first 3 digits)
+        const stateZipRanges = {
+            // Northeast
+            'MA': [{start: 10, end: 27}, {start: 55, end: 59}],
+            'RI': [{start: 28, end: 29}],
+            'NH': [{start: 30, end: 38}],
+            'ME': [{start: 39, end: 49}],
+            'VT': [{start: 50, end: 54}],
+            'CT': [{start: 60, end: 69}],
+            'NJ': [{start: 70, end: 89}],
+            'NY': [{start: 100, end: 149}],
+            'PA': [{start: 150, end: 196}],
+            
+            // Mid-Atlantic & DC
+            'DE': [{start: 197, end: 199}],
+            'DC': [{start: 200, end: 205}],
+            'MD': [{start: 206, end: 219}],
+            'VA': [{start: 220, end: 246}],
+            'WV': [{start: 247, end: 268}],
+            
+            // Southeast
+            'NC': [{start: 270, end: 289}],
+            'SC': [{start: 290, end: 299}],
+            'GA': [{start: 300, end: 319}, {start: 398, end: 399}],
+            'FL': [{start: 320, end: 349}],
+            
+            // South
+            'AL': [{start: 350, end: 369}],
+            'TN': [{start: 370, end: 385}],
+            'MS': [{start: 386, end: 397}],
+            'KY': [{start: 400, end: 427}],
+            'OH': [{start: 430, end: 459}],
+            'IN': [{start: 460, end: 479}],
+            
+            // Midwest
+            'MI': [{start: 480, end: 499}],
+            'IA': [{start: 500, end: 528}],
+            'WI': [{start: 530, end: 549}],
+            'MN': [{start: 550, end: 567}],
+            'SD': [{start: 570, end: 577}],
+            'ND': [{start: 580, end: 588}],
+            'MT': [{start: 590, end: 599}],
+            
+            // Central
+            'IL': [{start: 600, end: 629}],
+            'MO': [{start: 630, end: 658}],
+            'KS': [{start: 660, end: 679}],
+            'NE': [{start: 680, end: 693}],
+            
+            // South Central
+            'LA': [{start: 700, end: 714}],
+            'AR': [{start: 716, end: 729}],
+            'OK': [{start: 730, end: 749}],
+            'TX': [{start: 750, end: 799}, {start: 885, end: 885}],
+            
+            // Mountain
+            'CO': [{start: 800, end: 816}],
+            'WY': [{start: 820, end: 831}],
+            'ID': [{start: 832, end: 838}],
+            'UT': [{start: 840, end: 847}],
+            'AZ': [{start: 850, end: 865}],
+            'NM': [{start: 870, end: 884}],
+            'NV': [{start: 889, end: 898}],
+            
+            // West
+            'CA': [{start: 900, end: 961}],
+            'HI': [{start: 967, end: 968}],
+            'OR': [{start: 970, end: 979}],
+            'WA': [{start: 980, end: 994}],
+            'AK': [{start: 995, end: 999}],
+            
+            // U.S. Territories
+            'PR': [{start: 6, end: 9}],  // Puerto Rico 00600-00999
+            'VI': [{start: 8, end: 8}],  // Virgin Islands 00800-00899
+            'GU': [{start: 969, end: 969}],  // Guam 96910-96932
+            'AS': [{start: 967, end: 967}],  // American Samoa (shares with HI)
+            'MP': [{start: 969, end: 969}],  // Northern Mariana Islands
+            'FM': [{start: 969, end: 969}],  // Federated States of Micronesia
+            'MH': [{start: 969, end: 969}],  // Marshall Islands
+            'PW': [{start: 969, end: 969}]   // Palau
+        };
+        
+        return stateZipRanges[stateAbbr] || null;
+    }
+    
+    detectStatesFromZipCodes() {
+        const states = new Set();
+        const joinColumn = document.getElementById('joinColumn').value;
+        
+        if (this.csvData && joinColumn) {
+            this.csvData.forEach(row => {
+                let zip = String(row[joinColumn]).trim();
+                
+                // Normalize ZIP to 5 digits for state detection
+                if (zip.match(/^\d+$/)) {
+                    if (zip.length === 3) {
+                        zip = '00' + zip;
+                    } else if (zip.length === 4) {
+                        zip = '0' + zip;
+                    }
+                    
+                    // Map ZIP code ranges to states
+                    const zipPrefix = parseInt(zip.substring(0, 3));
+                    
+                    // Complete ZIP code to state mapping (first 3 digits)
+                    // Northeast
+                    if ((zipPrefix >= 10 && zipPrefix <= 27) || (zipPrefix >= 55 && zipPrefix <= 59)) states.add('MA');
+                    else if (zipPrefix >= 28 && zipPrefix <= 29) states.add('RI');
+                    else if (zipPrefix >= 30 && zipPrefix <= 38) states.add('NH');
+                    else if (zipPrefix >= 39 && zipPrefix <= 49) states.add('ME');
+                    else if (zipPrefix >= 50 && zipPrefix <= 54) states.add('VT');
+                    else if (zipPrefix >= 60 && zipPrefix <= 69) states.add('CT');
+                    else if (zipPrefix >= 70 && zipPrefix <= 89) states.add('NJ');
+                    else if (zipPrefix >= 100 && zipPrefix <= 149) states.add('NY');
+                    else if (zipPrefix >= 150 && zipPrefix <= 196) states.add('PA');
+                    
+                    // Mid-Atlantic & DC
+                    else if (zipPrefix >= 197 && zipPrefix <= 199) states.add('DE');
+                    else if (zipPrefix >= 200 && zipPrefix <= 205) states.add('DC');
+                    else if (zipPrefix >= 206 && zipPrefix <= 219) states.add('MD');
+                    else if (zipPrefix >= 220 && zipPrefix <= 246) states.add('VA');
+                    else if (zipPrefix >= 247 && zipPrefix <= 268) states.add('WV');
+                    
+                    // Southeast
+                    else if (zipPrefix >= 270 && zipPrefix <= 289) states.add('NC');
+                    else if (zipPrefix >= 290 && zipPrefix <= 299) states.add('SC');
+                    else if ((zipPrefix >= 300 && zipPrefix <= 319) || (zipPrefix >= 398 && zipPrefix <= 399)) states.add('GA');
+                    else if (zipPrefix >= 320 && zipPrefix <= 349) states.add('FL');
+                    
+                    // South
+                    else if (zipPrefix >= 350 && zipPrefix <= 369) states.add('AL');
+                    else if (zipPrefix >= 370 && zipPrefix <= 385) states.add('TN');
+                    else if (zipPrefix >= 386 && zipPrefix <= 397) states.add('MS');
+                    else if (zipPrefix >= 400 && zipPrefix <= 427) states.add('KY');
+                    else if (zipPrefix >= 430 && zipPrefix <= 459) states.add('OH');
+                    else if (zipPrefix >= 460 && zipPrefix <= 479) states.add('IN');
+                    
+                    // Midwest
+                    else if (zipPrefix >= 480 && zipPrefix <= 499) states.add('MI');
+                    else if (zipPrefix >= 500 && zipPrefix <= 528) states.add('IA');
+                    else if (zipPrefix >= 530 && zipPrefix <= 549) states.add('WI');
+                    else if (zipPrefix >= 550 && zipPrefix <= 567) states.add('MN');
+                    else if (zipPrefix >= 570 && zipPrefix <= 577) states.add('SD');
+                    else if (zipPrefix >= 580 && zipPrefix <= 588) states.add('ND');
+                    else if (zipPrefix >= 590 && zipPrefix <= 599) states.add('MT');
+                    
+                    // Central
+                    else if (zipPrefix >= 600 && zipPrefix <= 629) states.add('IL');
+                    else if (zipPrefix >= 630 && zipPrefix <= 658) states.add('MO');
+                    else if (zipPrefix >= 660 && zipPrefix <= 679) states.add('KS');
+                    else if (zipPrefix >= 680 && zipPrefix <= 693) states.add('NE');
+                    
+                    // South Central
+                    else if (zipPrefix >= 700 && zipPrefix <= 714) states.add('LA');
+                    else if (zipPrefix >= 716 && zipPrefix <= 729) states.add('AR');
+                    else if (zipPrefix >= 730 && zipPrefix <= 749) states.add('OK');
+                    else if ((zipPrefix >= 750 && zipPrefix <= 799) || zipPrefix === 885) states.add('TX');
+                    
+                    // Mountain
+                    else if (zipPrefix >= 800 && zipPrefix <= 816) states.add('CO');
+                    else if (zipPrefix >= 820 && zipPrefix <= 831) states.add('WY');
+                    else if (zipPrefix >= 832 && zipPrefix <= 838) states.add('ID');
+                    else if (zipPrefix >= 840 && zipPrefix <= 847) states.add('UT');
+                    else if (zipPrefix >= 850 && zipPrefix <= 865) states.add('AZ');
+                    else if (zipPrefix >= 870 && zipPrefix <= 884) states.add('NM');
+                    else if (zipPrefix >= 889 && zipPrefix <= 898) states.add('NV');
+                    
+                    // West
+                    else if (zipPrefix >= 900 && zipPrefix <= 961) states.add('CA');
+                    else if (zipPrefix === 967 || zipPrefix === 968) states.add('HI');
+                    else if (zipPrefix >= 970 && zipPrefix <= 979) states.add('OR');
+                    else if (zipPrefix >= 980 && zipPrefix <= 994) states.add('WA');
+                    else if (zipPrefix >= 995 && zipPrefix <= 999) states.add('AK');
+                    
+                    // U.S. Territories
+                    else if (zipPrefix >= 6 && zipPrefix <= 9) states.add('PR');  // Also covers VI
+                    else if (zipPrefix === 969) states.add('GU');  // Also covers MP, FM, MH, PW
+                }
+            });
+        }
+        
+        console.log('Detected states from ZIP codes:', Array.from(states));
+        return states;
+    }
+    
     detectStatesFromData() {
         const states = new Set();
         const joinColumn = document.getElementById('joinColumn').value;
@@ -420,6 +606,39 @@ class ChoroplethMapper {
     async fetchGeographicData(geoLevel, stateFilter) {
         console.log('fetchGeographicData called with:', { geoLevel, stateFilter });
         
+        // For ZIP codes without state filter, detect states from ZIP codes
+        if (!stateFilter && geoLevel === 'zip') {
+            console.log('Detecting states from ZIP codes...');
+            const detectedStates = this.detectStatesFromZipCodes();
+            console.log('Detected states from ZIPs:', Array.from(detectedStates));
+            
+            if (detectedStates.size > 0 && detectedStates.size <= 10) {
+                console.log(`Will fetch ZIP codes for ${detectedStates.size} states`);
+                const allFeatures = [];
+                
+                for (const stateAbbr of detectedStates) {
+                    console.log(`Fetching ZIP codes for ${stateAbbr}...`);
+                    try {
+                        await this.fetchSingleStateData(geoLevel, stateAbbr);
+                        if (this.geoData && this.geoData.features) {
+                            allFeatures.push(...this.geoData.features);
+                        }
+                    } catch (error) {
+                        console.error(`Failed to fetch ZIP codes for ${stateAbbr}:`, error);
+                    }
+                }
+                
+                if (allFeatures.length > 0) {
+                    this.geoData = {
+                        type: 'FeatureCollection',
+                        features: allFeatures
+                    };
+                    console.log(`Total ZIP codes loaded: ${allFeatures.length} from ${detectedStates.size} states`);
+                    return;
+                }
+            }
+        }
+        
         // If no state filter selected, detect states from FIPS codes and fetch each
         if (!stateFilter && (geoLevel === 'county' || geoLevel === 'place')) {
             console.log('No state filter, attempting to detect states from data...');
@@ -472,27 +691,10 @@ class ChoroplethMapper {
             return await this.fetchInBatches(geoLevel, stateFilter);
         }
         
-        // For ZIP codes, use a different service that works better
+        // For ZIP codes, skip GitHub and use ArcGIS directly for better coverage
         if (geoLevel === 'zip') {
-            // Use a public GeoJSON file for ZIP codes (Florida only for now)
-            if (!stateFilter || stateFilter === 'FL') {
-                url = 'https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/fl_florida_zip_codes_geo.min.json';
-                try {
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        this.geoData = await response.json();
-                        console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes from GitHub`);
-                        // Log sample feature to see field names
-                        if (this.geoData.features && this.geoData.features.length > 0) {
-                            console.log('Florida ZIP feature fields:', Object.keys(this.geoData.features[0].properties));
-                            console.log('Sample FL ZIP feature:', this.geoData.features[0].properties);
-                        }
-                        return;
-                    }
-                } catch (error) {
-                    console.log('GitHub ZIP source failed, trying ArcGIS');
-                }
-            }
+            // We'll use ArcGIS which has all ZIP codes nationwide
+            console.log('Using ArcGIS for ZIP codes to ensure full coverage');
         }
         
         const baseUrl = 'https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services';
@@ -636,8 +838,19 @@ class ChoroplethMapper {
             if (geoLevel === 'place') {
                 where = `STATE = '${stateFilter}' OR ST = '${stateFilter}'`;
             } else if (geoLevel === 'zip') {
-                // For ZIP, we'll need to filter after fetching
-                where = '1=1';
+                // For ZIP codes, filter by prefix for specific states
+                const zipRanges = this.getZipRangesForState(stateFilter);
+                if (zipRanges && zipRanges.length > 0 && zipRanges.length === 1) {
+                    // Simple case - single range
+                    const range = zipRanges[0];
+                    const start = String(range.start).padStart(3, '0');
+                    const end = String(range.end).padStart(3, '0');
+                    where = `ZCTA5CE20 >= '${start}00' AND ZCTA5CE20 <= '${end}99'`;
+                    console.log(`ZIP filter for ${stateFilter}: ${where}`);
+                } else {
+                    // Complex case or no filter
+                    where = '1=1';
+                }
             } else {
                 const stateFips = this.getStateFips(stateFilter);
                 where = `STATE = '${stateFips}' OR STATEFP = '${stateFips}'`;
@@ -798,34 +1011,123 @@ class ChoroplethMapper {
         console.log(`Starting merge: ${this.geoData.features.length} geographic features`);
         console.log('Sample feature properties:', this.geoData.features[0]?.properties);
         
+        // First, normalize ZIP codes if needed
+        if (geoLevel === 'zip') {
+            this.csvData = this.csvData.map(row => {
+                const key = String(row[joinColumn]).trim();
+                if (key.match(/^\d+$/)) {
+                    // Pad ZIP codes to 5 digits
+                    if (key.length === 3) {
+                        row[joinColumn] = '00' + key; // PR/VI
+                        console.log(`Normalizing 3-digit ZIP: ${key} -> ${row[joinColumn]}`);
+                    } else if (key.length === 4) {
+                        row[joinColumn] = '0' + key; // New England
+                        console.log(`Normalizing 4-digit ZIP: ${key} -> ${row[joinColumn]}`);
+                    }
+                }
+                return row;
+            });
+        }
+        
+        // Check if we need to aggregate data (multiple rows per geographic unit)
+        const geoIdCounts = new Map();
+        this.csvData.forEach(row => {
+            const key = String(row[joinColumn]).trim();
+            geoIdCounts.set(key, (geoIdCounts.get(key) || 0) + 1);
+        });
+        
+        // Determine if we have raw data that needs aggregation
+        const hasMultipleRecordsPerGeo = Array.from(geoIdCounts.values()).some(count => count > 1);
+        const isNumericDataColumn = this.csvData.every(row => !isNaN(parseFloat(row[dataColumn])));
+        
         const csvMap = new Map();
         const countyNameMap = new Map(); // For county name matching
         
+        // If we have multiple records per geography, aggregate them
+        if (hasMultipleRecordsPerGeo && !isNumericDataColumn) {
+            console.log('Detected raw data with multiple records per geography. Auto-aggregating counts...');
+            
+            // Aggregate by counting occurrences
+            const aggregatedData = new Map();
+            this.csvData.forEach(row => {
+                const key = String(row[joinColumn]).trim();
+                if (!aggregatedData.has(key)) {
+                    aggregatedData.set(key, { ...row, _aggregated_count: 1 });
+                } else {
+                    aggregatedData.get(key)._aggregated_count++;
+                }
+            });
+            
+            // Use aggregated data for mapping
+            aggregatedData.forEach((row, key) => {
+                // Replace the data column value with the count
+                row[dataColumn] = row._aggregated_count;
+                csvMap.set(key, row);
+            });
+            
+            // Show aggregation notice to user
+            this.showSuccess(`Auto-aggregated ${this.csvData.length} records into ${aggregatedData.size} geographic units`);
+            
+        } else if (hasMultipleRecordsPerGeo && isNumericDataColumn) {
+            console.log('Detected raw data with numeric values. Auto-summing values per geography...');
+            
+            // Aggregate by summing numeric values
+            const aggregatedData = new Map();
+            this.csvData.forEach(row => {
+                const key = String(row[joinColumn]).trim();
+                const value = parseFloat(row[dataColumn]) || 0;
+                
+                if (!aggregatedData.has(key)) {
+                    aggregatedData.set(key, { ...row });
+                    aggregatedData.get(key)[dataColumn] = value;
+                } else {
+                    // Sum the values
+                    aggregatedData.get(key)[dataColumn] = 
+                        parseFloat(aggregatedData.get(key)[dataColumn]) + value;
+                }
+            });
+            
+            // Use aggregated data for mapping
+            aggregatedData.forEach((row, key) => {
+                csvMap.set(key, row);
+            });
+            
+            // Show aggregation notice to user
+            this.showSuccess(`Auto-aggregated ${this.csvData.length} records by summing values into ${aggregatedData.size} geographic units`);
+            
+        } else {
+            // No aggregation needed - use data as-is
+            this.csvData.forEach(row => {
+                let key = String(row[joinColumn]).trim();
+                csvMap.set(key, row);
+            });
+        }
+        
+        // Now handle special cases for ZIP codes and county name matching
         this.csvData.forEach(row => {
             let key = String(row[joinColumn]).trim();
-            csvMap.set(key, row);
             
-            // For ZIP codes, handle leading zero issues
+            // For ZIP codes, create multiple lookup keys for flexible matching
             if (geoLevel === 'zip' && key.match(/^\d+$/)) {
-                // Store original
+                // Store the normalized 5-digit version (already done above)
                 csvMap.set(key, row);
                 
-                // If 4 digits, assume it's a New England ZIP missing leading zero (e.g., 2134 -> 02134)
-                if (key.length === 4) {
-                    const paddedZip = '0' + key;
-                    csvMap.set(paddedZip, row);
-                    console.log(`Padded 4-digit ZIP: ${key} -> ${paddedZip} (New England)`);
-                }
-                
-                // If 3 digits, assume it's Puerto Rico or Virgin Islands (e.g., 601 -> 00601)
-                if (key.length === 3) {
-                    const paddedZip = '00' + key;
-                    csvMap.set(paddedZip, row);
-                    console.log(`Padded 3-digit ZIP: ${key} -> ${paddedZip} (PR/VI)`);
-                }
-                
                 // Also store without leading zeros for matching
-                csvMap.set(parseInt(key).toString(), row);
+                const numericZip = parseInt(key).toString();
+                csvMap.set(numericZip, row);
+                
+                // Store the original length versions too
+                if (key.length === 5 && key.startsWith('0')) {
+                    // If it starts with 0, also store 4-digit version
+                    const fourDigit = key.substring(1);
+                    csvMap.set(fourDigit, row);
+                    
+                    // If it starts with 00, also store 3-digit version
+                    if (key.startsWith('00')) {
+                        const threeDigit = key.substring(2);
+                        csvMap.set(threeDigit, row);
+                    }
+                }
             }
             
             // For county-level data, also create name-based lookups
@@ -1031,7 +1333,10 @@ class ChoroplethMapper {
             helpMessage += `Expected format for ${geoLevel}:\n`;
             
             if (geoLevel === 'zip') {
-                helpMessage += '• 5-digit ZIP codes (e.g., 33701, 02134)\n';
+                helpMessage += '• 3-5 digit ZIP codes (automatically padded)\n';
+                helpMessage += '• 3 digits: PR/VI (e.g., 601 → 00601)\n';
+                helpMessage += '• 4 digits: New England (e.g., 2134 → 02134)\n';
+                helpMessage += '• 5 digits: Standard (e.g., 33701)\n';
             } else if (geoLevel === 'county') {
                 helpMessage += '• 5-digit FIPS codes (e.g., 12103) OR county names (e.g., "Pinellas County" or "Pinellas")\n';
                 helpMessage += '• If using county names, select a state filter\n';
