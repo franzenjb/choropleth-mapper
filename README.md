@@ -46,6 +46,27 @@
 4. **Creates** an interactive choropleth map for preview
 5. **Exports** to GeoJSON/Shapefile for direct import into ArcGIS Online or ArcGIS Pro
 
+## ⚠️ API Limits & Large Datasets
+
+### Current Limits by Geography Type:
+| Geography | Typical Count | API Limit | States Affected |
+|-----------|--------------|-----------|-----------------|
+| **Counties** | 50-250 per state | 2,000 | ✅ All states work |
+| **Places** | 200-1,800 per state | 2,000 | ⚠️ California (1,800) close to limit |
+| **ZIP Codes** | 200-2,600 per state | 2,000 | ❌ California (2,600), Texas (2,000+) exceed limit |
+| **Census Tracts** | 1,000-8,000 per state | 2,000 | ❌ Most large states exceed limit |
+| **Sub-counties** | 100-500 per state | 2,000 | ✅ All states work |
+
+### Automatic Handling:
+- **Auto-detects states** from FIPS codes and fetches only needed boundaries
+- **Multi-state support** works for up to 10 states combined (if under 2,000 total features)
+- **Batch processing** for large datasets (California ZIPs, census tracts) - automatically splits requests
+
+### Manual Solutions if Limits Exceeded:
+1. **Use state filter** - Select specific state to reduce data
+2. **Split your CSV** - Process by regions or counties
+3. **Use county-level** instead of tract-level for large area analysis
+
 ## 📊 Data Format Requirements
 
 ### For County Data:

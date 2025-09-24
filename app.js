@@ -405,6 +405,13 @@ class ChoroplethMapper {
         const year = '2023';
         let url = '';
         
+        // Check if we need batch fetching for large states
+        const needsBatchFetch = this.needsBatchFetching(geoLevel, stateFilter);
+        if (needsBatchFetch) {
+            console.log(`Large dataset detected for ${stateFilter} ${geoLevel}. Using batch fetching...`);
+            return await this.fetchInBatches(geoLevel, stateFilter);
+        }
+        
         // For ZIP codes, use a different service that works better
         if (geoLevel === 'zip') {
             // Use a public GeoJSON file for ZIP codes (Florida only for now)
@@ -535,6 +542,124 @@ class ChoroplethMapper {
         }
     }
 
+    needsBatchFetching(geoLevel, stateFilter) {
+        // Define which states need batch fetching for specific geography types
+        const largeDatasetsNeedingBatch = {
+            'zip': ['CA', 'TX', 'NY', 'FL', 'PA', 'IL', 'OH'],
+            'tract': ['CA', 'TX', 'NY', 'FL', 'PA', 'IL', 'OH', 'GA', 'NC', 'MI'],
+            'place': ['CA', 'TX'] // California has ~1,800 places
+        };
+        
+        return largeDatasetsNeedingBatch[geoLevel]?.includes(stateFilter);
+    }
+    
+    async fetchInBatches(geoLevel, stateFilter) {
+        const baseUrl = 'https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services';
+        const endpoints = {
+            'county': `/USA_Counties_Generalized_Boundaries/FeatureServer/0`,
+            'subcounty': `/USA_County_Subdivisions/FeatureServer/0`,
+            'zip': `/USA_ZIP_Code_Tabulation_Areas_ZCTA5_2020/FeatureServer/0`,
+            'tract': `/USA_Census_Tracts/FeatureServer/0`,
+            'place': `/USA_Census_Populated_Places/FeatureServer/0`,
+            'state': `/USA_States_Generalized/FeatureServer/0`
+        };
+        
+        const url = baseUrl + endpoints[geoLevel] + '/query';
+        let where = '1=1';
+        
+        if (stateFilter) {
+            if (geoLevel === 'place') {
+                where = `STATE = '${stateFilter}' OR ST = '${stateFilter}'`;
+            } else if (geoLevel === 'zip') {
+                // For ZIP, we'll need to filter after fetching
+                where = '1=1';
+            } else {
+                const stateFips = this.getStateFips(stateFilter);
+                where = `STATE = '${stateFips}' OR STATEFP = '${stateFips}'`;
+            }
+        }
+        
+        const allFeatures = [];
+        let offset = 0;
+        const limit = 2000;
+        let hasMore = true;
+        
+        this.showLoading(true);
+        const loadingText = document.querySelector('.loading-text');
+        
+        while (hasMore) {
+            const params = new URLSearchParams({
+                where: where,
+                outFields: '*',
+                f: 'geojson',
+                outSR: '4326',
+                returnGeometry: 'true',
+                geometryPrecision: '4',
+                resultOffset: offset,
+                resultRecordCount: limit
+            });
+            
+            try {
+                if (loadingText) {
+                    loadingText.textContent = `Fetching batch ${Math.floor(offset/limit) + 1}... (${allFeatures.length} features loaded)`;
+                }
+                
+                console.log(`Fetching batch at offset ${offset}...`);
+                const response = await fetch(`${url}?${params}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Batch fetch failed: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.features && data.features.length > 0) {
+                    allFeatures.push(...data.features);
+                    console.log(`  Fetched ${data.features.length} features (total: ${allFeatures.length})`);
+                    
+                    if (data.features.length < limit) {
+                        hasMore = false; // Got less than limit, no more data
+                    } else {
+                        offset += limit;
+                    }
+                } else {
+                    hasMore = false; // No more features
+                }
+                
+                // Safety check to prevent infinite loops
+                if (offset > 10000) {
+                    console.warn('Batch fetch stopped at 10,000 features to prevent infinite loop');
+                    hasMore = false;
+                }
+                
+            } catch (error) {
+                console.error(`Batch fetch error at offset ${offset}:`, error);
+                hasMore = false;
+            }
+        }
+        
+        if (loadingText) {
+            loadingText.textContent = 'Processing your data...';
+        }
+        
+        this.geoData = {
+            type: 'FeatureCollection',
+            features: allFeatures
+        };
+        
+        console.log(`Batch fetch complete: ${allFeatures.length} total features`);
+        
+        // For ZIP codes, filter by state after fetching
+        if (geoLevel === 'zip' && stateFilter) {
+            const stateFips = this.getStateFips(stateFilter);
+            this.geoData.features = this.geoData.features.filter(f => {
+                const geoid = f.properties.GEOID || f.properties.ZCTA5CE20 || '';
+                return geoid.startsWith(stateFips);
+            });
+            console.log(`Filtered to ${this.geoData.features.length} ${stateFilter} ZIP codes`);
+        }
+    }
+    
     getTigerUrl(geoLevel, year, stateFilter) {
         const tigerBase = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb`;
         
