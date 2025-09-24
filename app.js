@@ -853,8 +853,13 @@ class ChoroplethMapper {
                 // Get the appropriate display name based on geography type
                 let displayName = 'Unknown';
                 
-                // First try to use any Display_label or location name from the joined CSV data
-                if (feature.properties.Display_label) {
+                // For ZIP codes, ALWAYS show the ZIP code, not county or other fields
+                if (geoLevel === 'zip') {
+                    // For ZIP codes, show the ZIP code itself
+                    const zipCode = feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || feature.properties.ZIP || feature.properties.GEOID || feature.properties.ZCTA || 'Unknown';
+                    displayName = `ZIP ${zipCode}`;
+                } else if (feature.properties.Display_label) {
+                    // For other geographies, use Display_label if available
                     displayName = feature.properties.Display_label;
                 } else if (feature.properties.Location) {
                     displayName = feature.properties.Location;
@@ -862,9 +867,6 @@ class ChoroplethMapper {
                     displayName = feature.properties.County;
                 } else if (feature.properties.Place) {
                     displayName = feature.properties.Place;
-                } else if (geoLevel === 'zip') {
-                    // For ZIP codes, show the ZIP code itself
-                    displayName = `ZIP ${feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || feature.properties.ZIP || feature.properties.GEOID || 'Unknown'}`;
                 } else if (geoLevel === 'county') {
                     displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
                 } else if (geoLevel === 'place') {
