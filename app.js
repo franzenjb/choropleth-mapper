@@ -949,13 +949,30 @@ class ChoroplethMapper {
             }
             
             if (matched && csvRecord) {
+                // Convert numeric strings to numbers for all CSV columns
+                const processedCsvRecord = {};
+                for (const [key, value] of Object.entries(csvRecord)) {
+                    // Try to parse as number if it looks numeric
+                    if (value !== null && value !== undefined && value !== '') {
+                        const trimmedValue = String(value).trim();
+                        // Check if it's a number (including decimals and negative numbers)
+                        if (/^-?\d*\.?\d+$/.test(trimmedValue)) {
+                            processedCsvRecord[key] = parseFloat(trimmedValue);
+                        } else {
+                            processedCsvRecord[key] = value;
+                        }
+                    } else {
+                        processedCsvRecord[key] = value;
+                    }
+                }
+                
                 // Merge ALL CSV columns with geographic properties
-                // Start with geographic properties, then add ALL CSV data
+                // Start with geographic properties, then add ALL CSV data (now with proper types)
                 const mergedFeature = {
                     ...feature,
                     properties: {
                         ...feature.properties,  // Keep all original geographic fields
-                        ...csvRecord,           // Add ALL columns from CSV
+                        ...processedCsvRecord,  // Add ALL columns from CSV with proper types
                         // Ensure choropleth_value is numeric
                         choropleth_value: parseFloat(csvRecord[dataColumn]) || 0
                     }
