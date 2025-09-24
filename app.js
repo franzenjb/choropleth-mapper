@@ -1318,17 +1318,18 @@ class ChoroplethMapper {
                            feature.properties.ZIPCODE || 
                            'Unknown';
             displayName = `ZIP ${zipCode}`;
-            } else if (geoLevel === 'county') {
-                displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
-            } else if (geoLevel === 'place') {
-                displayName = feature.properties.NAME || feature.properties.PLACENAME || feature.properties.name || 'Unknown Place';
-            } else if (geoLevel === 'tract') {
-                displayName = `Tract ${feature.properties.NAME || feature.properties.TRACTCE || feature.properties.GEOID || 'Unknown'}`;
-            } else if (geoLevel === 'subcounty') {
-                displayName = feature.properties.NAME || feature.properties.NAMELSAD || 'Unknown Sub-County';
-            } else if (geoLevel === 'state') {
-                displayName = feature.properties.NAME || feature.properties.STATE_NAME || 'Unknown State';
-            }
+        } else if (geoLevel === 'county') {
+            displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
+        } else if (geoLevel === 'place') {
+            displayName = feature.properties.NAME || feature.properties.PLACENAME || feature.properties.name || 'Unknown Place';
+        } else if (geoLevel === 'tract') {
+            displayName = `Tract ${feature.properties.NAME || feature.properties.TRACTCE || feature.properties.GEOID || 'Unknown'}`;
+        } else if (geoLevel === 'subcounty') {
+            displayName = feature.properties.NAME || feature.properties.NAMELSAD || 'Unknown Sub-County';
+        } else if (geoLevel === 'state') {
+            displayName = feature.properties.NAME || feature.properties.STATE_NAME || 'Unknown State';
+        } else {
+            displayName = 'Unknown';
         }
         
         return displayName;
