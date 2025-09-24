@@ -86,6 +86,14 @@
 - Column name: `GEOID`
 - Format: 7-digit place codes (e.g., 1200950 for Jacksonville)
 
+## 🔧 Recent Updates (January 2025)
+
+### Critical Data Preservation Fix
+- **ALL CSV columns are now preserved** in GeoJSON/Shapefile exports
+- **Numeric data types maintained** - no more conversion to text (ABC)
+- Proper data types for ArcGIS analysis and color-coding
+- Complete data fidelity from CSV to final export
+
 ## 💡 Key Features & Benefits
 
 ### 🚀 Speed & Simplicity:
@@ -113,10 +121,27 @@
 - **Handles large datasets** - thousands of features
 
 ## 🛠️ Technical Details
-- Uses Census TIGER and ArcGIS REST APIs for geographic boundaries
-- Leaflet.js for interactive map preview
-- Supports county, ZIP code, census tract, and place geographies
-- Exports to multiple formats (GeoJSON, Shapefile)
+
+### Architecture
+- **Frontend**: Pure JavaScript, no build process required
+- **Map Engine**: Leaflet.js for interactive previews
+- **Data Sources**: Census TIGER & ArcGIS REST APIs (no authentication needed)
+- **CSV Parsing**: PapaParse for robust data handling
+- **Export Formats**: GeoJSON (native), Shapefile (via shpwrite.js)
+
+### Data Processing Pipeline
+1. **CSV Upload** → Auto-detect ID columns and numeric fields
+2. **Geographic Fetch** → Smart state detection from FIPS codes
+3. **Spatial Join** → Match CSV records to boundaries
+4. **Type Preservation** → Maintain numeric vs text data types
+5. **Export** → All original columns included with proper types
+
+### Key Technical Features
+- **Batch Processing**: Handles 2,000+ features via pagination
+- **Smart Matching**: Case-insensitive, handles leading zeros
+- **Auto-padding**: Fixes Excel's stripped zeros (02134 → 2134 → 02134)
+- **Memory Efficient**: Processes large datasets without crashes
+- **No Server Required**: Runs entirely in browser
 
 ## 📈 Universal Use Cases - Works with ANY CSV Data!
 
@@ -205,10 +230,19 @@ This script will:
 3. The mapper will automatically detect the correct ID column
 4. Generate your choropleth map!
 
+## ✅ What's Working Now
+- **Data Preservation**: ALL CSV columns export to ArcGIS (fixed Jan 2025)
+- **Numeric Types**: Numbers stay as numbers, not text (fixed Jan 2025)
+- **Multi-State Support**: Auto-detects states from FIPS codes
+- **Batch Processing**: California's 2,600+ ZIPs handled via pagination
+- **Custom Labels**: Toggle between Display_label and geographic names
+- **Base Maps**: Light/dark options for better visibility
+
 ## 🐛 Known Issues & Workarounds
 - **Map shows ocean instead of data**: Click the green "Zoom to Features" button
 - **Some features don't match**: Ensure your GEOID/ZIP codes are formatted correctly
 - **Raw ALICE data won't join**: Use the `clean_alice_data.py` script first
+- **API Limits**: Census tracts may exceed 2,000 limit for large states
 
 ## 🎓 Why This Matters
 Previously, creating a choropleth map required:
