@@ -74,8 +74,12 @@
 - Format: 5-digit FIPS codes (e.g., 12001 for Alachua County, FL)
 
 ### For ZIP Code Data:
-- Column name: `ZIP`
+- Column name: `ZIP`, `Zip`, `zip`, `zipcode`, `zip_code` (any case works!)
 - Format: 5-digit ZIP codes (e.g., 32003)
+- **Handles Excel issues automatically:**
+  - New England ZIPs that lost leading zeros: 2134 → 02134
+  - Puerto Rico/VI ZIPs: 601 → 00601
+  - Maine examples: 4011 → 04011, 3903 → 03903
 
 ### For Place/City Data:
 - Column name: `GEOID`

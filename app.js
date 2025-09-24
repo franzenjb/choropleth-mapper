@@ -787,11 +787,29 @@ class ChoroplethMapper {
         const countyNameMap = new Map(); // For county name matching
         
         this.csvData.forEach(row => {
-            const key = String(row[joinColumn]).trim();
+            let key = String(row[joinColumn]).trim();
             csvMap.set(key, row);
             
-            // Also store with leading zeros removed for ZIP codes
+            // For ZIP codes, handle leading zero issues
             if (geoLevel === 'zip' && key.match(/^\d+$/)) {
+                // Store original
+                csvMap.set(key, row);
+                
+                // If 4 digits, assume it's a New England ZIP missing leading zero (e.g., 2134 -> 02134)
+                if (key.length === 4) {
+                    const paddedZip = '0' + key;
+                    csvMap.set(paddedZip, row);
+                    console.log(`Padded 4-digit ZIP: ${key} -> ${paddedZip} (New England)`);
+                }
+                
+                // If 3 digits, assume it's Puerto Rico or Virgin Islands (e.g., 601 -> 00601)
+                if (key.length === 3) {
+                    const paddedZip = '00' + key;
+                    csvMap.set(paddedZip, row);
+                    console.log(`Padded 3-digit ZIP: ${key} -> ${paddedZip} (PR/VI)`);
+                }
+                
+                // Also store without leading zeros for matching
                 csvMap.set(parseInt(key).toString(), row);
             }
             
@@ -871,6 +889,17 @@ class ChoroplethMapper {
                         csvRecord = csvMap.get(unpaddedId);
                         matched = true;
                         break;
+                    }
+                    
+                    // For ZIP codes, if geo has 5 digits starting with 0, try 4-digit version
+                    if (geoLevel === 'zip' && geoId.match(/^0\d{4}$/)) {
+                        const fourDigit = geoId.substring(1); // Remove leading 0
+                        if (csvMap.has(fourDigit)) {
+                            csvRecord = csvMap.get(fourDigit);
+                            matched = true;
+                            console.log(`Matched New England ZIP: ${geoId} found as ${fourDigit} in CSV`);
+                            break;
+                        }
                     }
                 }
             }
