@@ -701,11 +701,13 @@ class ChoroplethMapper {
             }
             
             if (matched && csvRecord) {
+                // Only merge specific fields to avoid overwriting geographic identifiers
                 const mergedFeature = {
                     ...feature,
                     properties: {
                         ...feature.properties,
-                        ...csvRecord,
+                        // Only add Display_label if it exists, and the data value
+                        Display_label: csvRecord.Display_label || csvRecord.Display_Label || undefined,
                         choropleth_value: parseFloat(csvRecord[dataColumn]) || 0
                     }
                 };
@@ -870,13 +872,8 @@ class ChoroplethMapper {
                 
                 // Check if user wants custom labels from CSV
                 if (useCustomLabels) {
-                    // Try to use custom labels from CSV data
-                    displayName = feature.properties.Display_label || 
-                                 feature.properties.Location || 
-                                 feature.properties.County || 
-                                 feature.properties.Place ||
-                                 feature.properties.Name ||
-                                 null;
+                    // ONLY use Display_label field when custom labels is checked
+                    displayName = feature.properties.Display_label || null;
                 }
                 
                 // If no custom label or checkbox unchecked, use geography identifier
