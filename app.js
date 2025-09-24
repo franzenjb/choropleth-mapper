@@ -99,6 +99,20 @@ class ChoroplethMapper {
             });
         }
         
+        // Add listener for custom labels checkbox
+        const customLabelsCheckbox = document.getElementById('useCustomLabels');
+        if (customLabelsCheckbox) {
+            customLabelsCheckbox.addEventListener('change', () => {
+                // If map exists, refresh popups with new label preference
+                if (this.currentLayer && this.map) {
+                    // Re-create the layer with updated popup content
+                    this.map.removeLayer(this.currentLayer);
+                    this.createMap();
+                    this.showSuccess('Label display updated');
+                }
+            });
+        }
+        
         document.getElementById('geoLevel').addEventListener('change', (e) => {
             this.updateJoinColumnSuggestions(e.target.value);
         });
@@ -848,31 +862,45 @@ class ChoroplethMapper {
             onEachFeature: (feature, layer) => {
                 const dataColumn = document.getElementById('dataColumn').value;
                 const geoLevel = document.getElementById('geoLevel').value;
+                const useCustomLabels = document.getElementById('useCustomLabels')?.checked || false;
                 const value = feature.properties.choropleth_value;
                 
-                // Get the appropriate display name based on geography type
+                // Get the appropriate display name
                 let displayName = 'Unknown';
                 
-                // Show the appropriate identifier based on geography type
-                if (geoLevel === 'zip') {
-                    // For ZIP codes, show the ZIP code itself
-                    const zipCode = feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || feature.properties.ZIP || feature.properties.GEOID || feature.properties.ZCTA || 'Unknown';
-                    displayName = `ZIP ${zipCode}`;
-                } else if (geoLevel === 'county') {
-                    // For counties, show county name
-                    displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
-                } else if (geoLevel === 'place') {
-                    // For places/cities, show place name
-                    displayName = feature.properties.NAME || feature.properties.PLACENAME || feature.properties.name || 'Unknown Place';
-                } else if (geoLevel === 'tract') {
-                    // For census tracts, show tract number
-                    displayName = `Tract ${feature.properties.NAME || feature.properties.TRACTCE || feature.properties.GEOID || 'Unknown'}`;
-                } else if (geoLevel === 'subcounty') {
-                    // For sub-counties, show sub-county name
-                    displayName = feature.properties.NAME || feature.properties.NAMELSAD || 'Unknown Sub-County';
-                } else if (geoLevel === 'state') {
-                    // For states, show state name
-                    displayName = feature.properties.NAME || feature.properties.STATE_NAME || 'Unknown State';
+                // Check if user wants custom labels from CSV
+                if (useCustomLabels) {
+                    // Try to use custom labels from CSV data
+                    displayName = feature.properties.Display_label || 
+                                 feature.properties.Location || 
+                                 feature.properties.County || 
+                                 feature.properties.Place ||
+                                 feature.properties.Name ||
+                                 null;
+                }
+                
+                // If no custom label or checkbox unchecked, use geography identifier
+                if (!displayName) {
+                    if (geoLevel === 'zip') {
+                        // For ZIP codes, show the ZIP code itself
+                        const zipCode = feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || feature.properties.ZIP || feature.properties.GEOID || feature.properties.ZCTA || 'Unknown';
+                        displayName = `ZIP ${zipCode}`;
+                    } else if (geoLevel === 'county') {
+                        // For counties, show county name
+                        displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
+                    } else if (geoLevel === 'place') {
+                        // For places/cities, show place name
+                        displayName = feature.properties.NAME || feature.properties.PLACENAME || feature.properties.name || 'Unknown Place';
+                    } else if (geoLevel === 'tract') {
+                        // For census tracts, show tract number
+                        displayName = `Tract ${feature.properties.NAME || feature.properties.TRACTCE || feature.properties.GEOID || 'Unknown'}`;
+                    } else if (geoLevel === 'subcounty') {
+                        // For sub-counties, show sub-county name
+                        displayName = feature.properties.NAME || feature.properties.NAMELSAD || 'Unknown Sub-County';
+                    } else if (geoLevel === 'state') {
+                        // For states, show state name
+                        displayName = feature.properties.NAME || feature.properties.STATE_NAME || 'Unknown State';
+                    }
                 }
                 
                 layer.bindPopup(`
