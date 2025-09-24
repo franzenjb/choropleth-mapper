@@ -1306,6 +1306,38 @@ class ChoroplethMapper {
 
     exportShapefile() {
         try {
+            // Check if shpwrite library is loaded
+            if (typeof shpwrite === 'undefined') {
+                this.showError('Shapefile library not loaded. Please refresh the page and try again.');
+                console.error('shpwrite is not defined');
+                return;
+            }
+            
+            // Check if we have data to export
+            if (!this.mergedData || !this.mergedData.features || this.mergedData.features.length === 0) {
+                this.showError('No data to export. Please generate a map first.');
+                return;
+            }
+            
+            console.log('Exporting shapefile with', this.mergedData.features.length, 'features');
+            
+            // Create a simplified version for shapefile (remove complex properties)
+            const shapefileData = {
+                type: 'FeatureCollection',
+                features: this.mergedData.features.map(f => ({
+                    type: 'Feature',
+                    geometry: f.geometry,
+                    properties: {
+                        // Limit property names to 10 characters for shapefile DBF format
+                        GEOID: f.properties.GEOID || f.properties.GEOID10 || f.properties.GEOID20 || '',
+                        NAME: f.properties.NAME || f.properties.Display_label || '',
+                        VALUE: f.properties.choropleth_value || 0,
+                        // Add ZIP for ZIP codes
+                        ZIP: f.properties.ZCTA5CE10 || f.properties.ZCTA5CE20 || f.properties.ZIP || ''
+                    }
+                }))
+            };
+            
             const options = {
                 folder: 'choropleth_shapefile',
                 types: {
@@ -1315,15 +1347,41 @@ class ChoroplethMapper {
                 }
             };
             
-            shpwrite.download(this.mergedData, options);
+            shpwrite.download(shapefileData, options);
             this.showSuccess('Shapefile exported successfully!');
         } catch (error) {
+            console.error('Shapefile export error:', error);
             this.showError('Error exporting shapefile: ' + error.message);
         }
     }
 
     async exportToArcGIS() {
-        this.showError('ArcGIS Online integration requires authentication. Please export as GeoJSON and upload manually to ArcGIS Online.');
+        // Create a modal-style message with instructions
+        const message = `
+            <strong>To upload to ArcGIS Online:</strong><br><br>
+            1. Click "Export GeoJSON" to download your data<br>
+            2. Go to <a href="https://www.arcgis.com/home/content.html" target="_blank">ArcGIS Online</a><br>
+            3. Click "Add Item" → "From your computer"<br>
+            4. Select the GeoJSON file<br>
+            5. Choose "Add and create a hosted feature layer"<br><br>
+            <em>Direct upload requires API authentication which would expose your credentials.</em>
+        `;
+        
+        // Show as an info message instead of error
+        const errorDiv = document.getElementById('error');
+        errorDiv.innerHTML = message;
+        errorDiv.style.background = '#d1ecf1';
+        errorDiv.style.color = '#004085';
+        errorDiv.style.border = '1px solid #bee5eb';
+        errorDiv.classList.remove('hidden');
+        
+        // Keep message visible longer
+        setTimeout(() => {
+            errorDiv.classList.add('hidden');
+            errorDiv.style.background = '#fee';
+            errorDiv.style.color = '#c00';
+            errorDiv.style.border = '1px solid #fcc';
+        }, 15000); // 15 seconds
     }
 
     showLoading(show) {
