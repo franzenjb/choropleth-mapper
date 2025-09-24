@@ -695,10 +695,11 @@ class ChoroplethMapper {
             return await this.fetchInBatches(geoLevel, stateFilter);
         }
         
-        // For ZIP codes, skip GitHub and use ArcGIS directly for better coverage
-        if (geoLevel === 'zip') {
-            // We'll use ArcGIS which has all ZIP codes nationwide
-            console.log('Using ArcGIS for ZIP codes to ensure full coverage');
+        // For ZIP codes, use batch fetching for the state
+        if (geoLevel === 'zip' && stateFilter) {
+            // Use batch fetching which handles large datasets better
+            console.log(`Using batch fetching for ${stateFilter} ZIP codes`);
+            return await this.fetchInBatches(geoLevel, stateFilter);
         }
         
         const baseUrl = 'https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services';
@@ -842,19 +843,10 @@ class ChoroplethMapper {
             if (geoLevel === 'place') {
                 where = `STATE = '${stateFilter}' OR ST = '${stateFilter}'`;
             } else if (geoLevel === 'zip') {
-                // For ZIP codes, filter by prefix for specific states
-                const zipRanges = this.getZipRangesForState(stateFilter);
-                if (zipRanges && zipRanges.length > 0 && zipRanges.length === 1) {
-                    // Simple case - single range
-                    const range = zipRanges[0];
-                    const start = String(range.start).padStart(3, '0');
-                    const end = String(range.end).padStart(3, '0');
-                    where = `ZCTA5CE20 >= '${start}00' AND ZCTA5CE20 <= '${end}99'`;
-                    console.log(`ZIP filter for ${stateFilter}: ${where}`);
-                } else {
-                    // Complex case or no filter
-                    where = '1=1';
-                }
+                // ZIP codes need special handling - don't try to filter in query
+                // We'll fetch in batches and filter client-side
+                where = '1=1';
+                console.log(`Will fetch ZIP codes in batches for ${stateFilter}`);
             } else {
                 const stateFips = this.getStateFips(stateFilter);
                 where = `STATE = '${stateFips}' OR STATEFP = '${stateFips}'`;
@@ -933,12 +925,25 @@ class ChoroplethMapper {
         
         // For ZIP codes, filter by state after fetching
         if (geoLevel === 'zip' && stateFilter) {
-            const stateFips = this.getStateFips(stateFilter);
-            this.geoData.features = this.geoData.features.filter(f => {
-                const geoid = f.properties.GEOID || f.properties.ZCTA5CE20 || '';
-                return geoid.startsWith(stateFips);
-            });
-            console.log(`Filtered to ${this.geoData.features.length} ${stateFilter} ZIP codes`);
+            const zipRanges = this.getZipRangesForState(stateFilter);
+            if (zipRanges && zipRanges.length > 0) {
+                this.geoData.features = this.geoData.features.filter(f => {
+                    // Get the ZIP code from various possible fields
+                    const zip = f.properties.ZCTA5CE20 || f.properties.ZCTA5CE10 || 
+                               f.properties.ZCTA5 || f.properties.ZIP || 
+                               f.properties.GEOID || '';
+                    
+                    if (!zip) return false;
+                    
+                    const zipPrefix = parseInt(zip.substring(0, 3));
+                    
+                    // Check if this ZIP's prefix matches any of the state's ranges
+                    return zipRanges.some(range => 
+                        zipPrefix >= range.start && zipPrefix <= range.end
+                    );
+                });
+                console.log(`Filtered to ${this.geoData.features.length} ${stateFilter} ZIP codes`);
+            }
         }
     }
     
