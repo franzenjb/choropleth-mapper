@@ -9,18 +9,10 @@ class ChoroplethMapper {
         this.classColors = [];
         this.baseLayer = null;
         
-        // Wait for DOM to be ready before initializing
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                this.initEventListeners();
-                this.loadStates();
-                this.showVersion();
-            });
-        } else {
-            this.initEventListeners();
-            this.loadStates();
-            this.showVersion();
-        }
+        // Initialize immediately since we're already called from DOMContentLoaded
+        this.initEventListeners();
+        this.loadStates();
+        this.showVersion();
     }
     
     // ======================
@@ -50,12 +42,20 @@ class ChoroplethMapper {
         const csvInput = document.getElementById('csvInput');
         
         if (!uploadArea || !csvInput) {
-            console.error('Required DOM elements not found');
+            console.error('Required DOM elements not found:', {
+                uploadArea: !!uploadArea,
+                csvInput: !!csvInput
+            });
             return;
         }
         
+        console.log('Initializing event listeners...');
+        
         // File upload handlers
-        uploadArea.addEventListener('click', () => csvInput.click());
+        uploadArea.addEventListener('click', () => {
+            console.log('Upload area clicked');
+            csvInput.click();
+        });
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
