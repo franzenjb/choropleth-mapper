@@ -8,7 +8,7 @@ import json
 import requests
 import os
 
-def download_and_save(url, filename, property_mappings=None):
+def download_and_save(url, filename, property_mappings=None, id_field=None):
     """Download GeoJSON and save with standardized properties"""
     print(f"Downloading {filename}...")
     
@@ -16,6 +16,14 @@ def download_and_save(url, filename, property_mappings=None):
     response.raise_for_status()
     
     data = response.json()
+    
+    # For counties dataset, the 'id' is at the feature level, not in properties
+    if id_field == 'feature_id':
+        for feature in data['features']:
+            if 'id' in feature:
+                feature['properties']['id'] = feature['id']
+                feature['properties']['GEOID'] = feature['id']
+                feature['properties']['FIPS'] = feature['id']
     
     # Standardize property names if mapping provided
     if property_mappings:
@@ -109,14 +117,14 @@ def main():
     # 2. US Counties  
     print("\n2. US COUNTIES")
     counties_url = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
-    # Note: This dataset already has 'id' property with 5-digit FIPS
+    # Note: This dataset has 'id' at the feature level, not in properties
     download_and_save(counties_url, "us_counties.json", {
         'GEOID': ['id', 'GEOID'],
         'NAME': ['NAME'],
         'STATE': ['STATE'],
         'COUNTY': ['COUNTY'],
         'FIPS': ['id']  # Ensure FIPS is set from id
-    })
+    }, id_field='feature_id')
     
     # 3. ZIP Codes
     print("\n3. ZIP CODES")
