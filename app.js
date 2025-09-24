@@ -6,9 +6,19 @@ class ChoroplethMapper {
         this.map = null;
         this.currentLayer = null;
         
-        this.initEventListeners();
-        this.loadStates();
-        this.showVersion();
+        // Wait for DOM to be ready before initializing
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.initEventListeners();
+                this.loadStates();
+                this.showVersion();
+            });
+        } else {
+            // DOM is already loaded
+            this.initEventListeners();
+            this.loadStates();
+            this.showVersion();
+        }
     }
     
     showVersion() {
@@ -29,6 +39,11 @@ class ChoroplethMapper {
     initEventListeners() {
         const uploadArea = document.getElementById('uploadArea');
         const csvInput = document.getElementById('csvInput');
+        
+        if (!uploadArea || !csvInput) {
+            console.error('Required DOM elements not found');
+            return;
+        }
         
         uploadArea.addEventListener('click', () => csvInput.click());
         
