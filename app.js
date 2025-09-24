@@ -435,8 +435,8 @@ class ChoroplethMapper {
                 const stateFips = this.getStateFips(stateFilter);
                 where = `STATE = '${stateFips}' OR STATEFP = '${stateFips}'`;
             } else if (geoLevel === 'place') {
-                // Places use ST field for state abbreviation
-                where = `ST = '${stateFilter}'`;
+                // Places use STATE field for state abbreviation
+                where = `STATE = '${stateFilter}' OR ST = '${stateFilter}'`;
             } else {
                 // Counties use STATE_NAME or STUSPS
                 where = `STATE_NAME = '${this.getStateName(stateFilter)}' OR STUSPS = '${stateFilter}' OR STATE_ABBR = '${stateFilter}'`;
@@ -631,6 +631,18 @@ class ChoroplethMapper {
         
         const possibleFields = geoIdFields[geoLevel] || ['GEOID', 'FIPS'];
         console.log(`Looking for fields: ${possibleFields.join(', ')}`);
+        
+        // For debugging places
+        if (geoLevel === 'place' && this.geoData.features.length > 0) {
+            const samplePlace = this.geoData.features[0].properties;
+            console.log('Sample place feature has these identifier fields:');
+            possibleFields.forEach(field => {
+                if (samplePlace[field]) {
+                    console.log(`  ${field}: ${samplePlace[field]}`);
+                }
+            });
+            console.log('All available fields:', Object.keys(samplePlace));
+        }
         
         this.mergedData = {
             type: 'FeatureCollection',
