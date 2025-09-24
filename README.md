@@ -40,11 +40,12 @@
 | Time per Map | 1-2 hours | **2 minutes** |
 
 ## 🚀 What It Does
-1. **Upload** your CSV with data (population, percentages, etc.)
+1. **Upload** your CSV with data (population, percentages, ALICE metrics, etc.)
 2. **Automatically fetches** the correct map boundaries from Census/ArcGIS APIs
 3. **Joins** your data to those boundaries (no manual work!)
-4. **Creates** an interactive choropleth map for preview
-5. **Exports** to GeoJSON/Shapefile for direct import into ArcGIS Online or ArcGIS Pro
+4. **Preserves ALL your data columns** - not just the choropleth value
+5. **Creates** an interactive choropleth map for preview
+6. **Exports** to GeoJSON/Shapefile with ALL original data fields intact
 
 ## ⚠️ API Limits & Large Datasets
 

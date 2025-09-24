@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Export - Verify All Columns</title>
+    <script src="app.js"></script>
+</head>
+<body>
+    <h1>Testing Data Export</h1>
+    <p>This test verifies that ALL CSV columns are preserved in the export.</p>
+    <div id="results"></div>
+    
+    <script>
+        // Create test instance
+        const mapper = new ChoroplethMapper();
+        
+        // Test CSV data with multiple columns
+        const testCSV = `GEOID,County,Value,Population,ALICE_Households,Poverty_Rate,Additional_Field
+23001,Androscoggin,111139,107000,25000,12.5,TestData1
+23003,Aroostook,67105,68000,18000,18.2,TestData2
+23005,Cumberland,303069,290000,45000,8.5,TestData3`;
+        
+        // Parse CSV
+        const lines = testCSV.split('\n');
+        const headers = lines[0].split(',');
+        mapper.csvData = lines.slice(1).map(line => {
+            const values = line.split(',');
+            const record = {};
+            headers.forEach((header, i) => {
+                record[header] = values[i];
+            });
+            return record;
+        });
+        
+        // Create fake geo data
+        mapper.geoData = {
+            type: 'FeatureCollection',
+            features: [
+                {
+                    type: 'Feature',
+                    properties: { GEOID: '23001', NAME: 'Androscoggin' },
+                    geometry: { type: 'Polygon', coordinates: [[[-70, 44], [-69, 44], [-69, 45], [-70, 45], [-70, 44]]] }
+                },
+                {
+                    type: 'Feature', 
+                    properties: { GEOID: '23003', NAME: 'Aroostook' },
+                    geometry: { type: 'Polygon', coordinates: [[[-68, 46], [-67, 46], [-67, 47], [-68, 47], [-68, 46]]] }
+                },
+                {
+                    type: 'Feature',
+                    properties: { GEOID: '23005', NAME: 'Cumberland' },
+                    geometry: { type: 'Polygon', coordinates: [[[-71, 43], [-70, 43], [-70, 44], [-71, 44], [-71, 43]]] }
+                }
+            ]
+        };
+        
+        // Merge data
+        mapper.mergeData('GEOID', 'Value', 'county');
+        
+        // Check results
+        const results = document.getElementById('results');
+        let html = '<h2>Test Results:</h2>';
+        
+        // Check first feature
+        const firstFeature = mapper.mergedData.features[0];
+        const props = firstFeature.properties;
+        
+        html += '<h3>First Feature Properties:</h3>';
+        html += '<ul>';
+        for (const key in props) {
+            html += `<li><strong>${key}:</strong> ${props[key]}</li>`;
+        }
+        html += '</ul>';
+        
+        // Check if all CSV columns are present
+        const csvColumns = ['GEOID', 'County', 'Value', 'Population', 'ALICE_Households', 'Poverty_Rate', 'Additional_Field'];
+        const missingColumns = [];
+        const presentColumns = [];
+        
+        csvColumns.forEach(col => {
+            if (col in props) {
+                presentColumns.push(col);
+            } else {
+                missingColumns.push(col);
+            }
+        });
+        
+        html += '<h3>Column Preservation Check:</h3>';
+        html += `<p style="color: green;"><strong>✅ Present columns (${presentColumns.length}):</strong> ${presentColumns.join(', ')}</p>`;
+        if (missingColumns.length > 0) {
+            html += `<p style="color: red;"><strong>❌ Missing columns (${missingColumns.length}):</strong> ${missingColumns.join(', ')}</p>`;
+        }
+        
+        // Export test
+        const exportData = mapper.exportGeoJSON();
+        const exportedFeature = exportData.features[0];
+        
+        html += '<h3>Exported GeoJSON Check:</h3>';
+        html += '<p>Exported feature has ' + Object.keys(exportedFeature.properties).length + ' properties</p>';
+        
+        if (presentColumns.length === csvColumns.length) {
+            html += '<h2 style="color: green;">✅ SUCCESS: All CSV columns are preserved!</h2>';
+        } else {
+            html += '<h2 style="color: red;">❌ FAIL: Some CSV columns are missing!</h2>';
+        }
+        
+        results.innerHTML = html;
+        
+        // Log for debugging
+        console.log('Merged data:', mapper.mergedData);
+        console.log('Exported data:', exportData);
+    </script>
+</body>
+</html>

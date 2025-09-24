@@ -934,22 +934,24 @@ class ChoroplethMapper {
             }
             
             if (matched && csvRecord) {
-                // Only merge specific fields to avoid overwriting geographic identifiers
+                // Merge ALL CSV columns with geographic properties
+                // Start with geographic properties, then add ALL CSV data
                 const mergedFeature = {
                     ...feature,
                     properties: {
-                        ...feature.properties,
-                        // Check for Display_label in various formats
-                        Display_label: csvRecord.Display_label || 
-                                     csvRecord.Display_Label || 
-                                     csvRecord.display_label ||
-                                     csvRecord['GEO display_label'] ||
-                                     csvRecord['Geo Display_Label'] ||
-                                     csvRecord['geo display_label'] ||
-                                     undefined,
+                        ...feature.properties,  // Keep all original geographic fields
+                        ...csvRecord,           // Add ALL columns from CSV
+                        // Ensure choropleth_value is numeric
                         choropleth_value: parseFloat(csvRecord[dataColumn]) || 0
                     }
                 };
+                
+                // For safety, preserve critical geographic identifiers that might get overwritten
+                if (feature.properties.ZCTA5CE10) mergedFeature.properties.ZCTA5CE10 = feature.properties.ZCTA5CE10;
+                if (feature.properties.ZCTA5CE20) mergedFeature.properties.ZCTA5CE20 = feature.properties.ZCTA5CE20;
+                if (feature.properties.GEOID10) mergedFeature.properties.GEOID10 = feature.properties.GEOID10;
+                if (feature.properties.GEOID20) mergedFeature.properties.GEOID20 = feature.properties.GEOID20;
+                if (feature.properties.NAME) mergedFeature.properties.GEOGRAPHIC_NAME = feature.properties.NAME;
                 
                 // Debug: verify ZIP fields are preserved
                 if (geoLevel === 'zip' && index < 3) {
@@ -1321,21 +1323,45 @@ class ChoroplethMapper {
             
             console.log('Exporting shapefile with', this.mergedData.features.length, 'features');
             
-            // Create a simplified version for shapefile (remove complex properties)
+            // Create shapefile with ALL data fields (truncated to 10 chars for DBF)
             const shapefileData = {
                 type: 'FeatureCollection',
-                features: this.mergedData.features.map(f => ({
-                    type: 'Feature',
-                    geometry: f.geometry,
-                    properties: {
-                        // Limit property names to 10 characters for shapefile DBF format
-                        GEOID: f.properties.GEOID || f.properties.GEOID10 || f.properties.GEOID20 || '',
-                        NAME: f.properties.NAME || f.properties.Display_label || '',
-                        VALUE: f.properties.choropleth_value || 0,
-                        // Add ZIP for ZIP codes
-                        ZIP: f.properties.ZCTA5CE10 || f.properties.ZCTA5CE20 || f.properties.ZIP || ''
+                features: this.mergedData.features.map(f => {
+                    // Truncate field names to 10 characters for DBF format
+                    const truncatedProps = {};
+                    
+                    for (const [key, value] of Object.entries(f.properties)) {
+                        // Skip geometry fields that might cause issues
+                        if (key === 'geometry' || key === 'Shape__Area' || key === 'Shape__Length') {
+                            continue;
+                        }
+                        
+                        // Truncate field name to 10 characters
+                        let fieldName = key.substring(0, 10);
+                        
+                        // Handle duplicates by adding number suffix
+                        let counter = 1;
+                        let originalFieldName = fieldName;
+                        while (truncatedProps.hasOwnProperty(fieldName) && counter < 10) {
+                            fieldName = originalFieldName.substring(0, 9) + counter;
+                            counter++;
+                        }
+                        
+                        // Ensure values are shapefile-compatible
+                        let fieldValue = value;
+                        if (typeof fieldValue === 'string' && fieldValue.length > 254) {
+                            fieldValue = fieldValue.substring(0, 254); // DBF string limit
+                        }
+                        
+                        truncatedProps[fieldName] = fieldValue;
                     }
-                }))
+                    
+                    return {
+                        type: 'Feature',
+                        geometry: f.geometry,
+                        properties: truncatedProps
+                    };
+                })
             };
             
             const options = {
