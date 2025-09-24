@@ -175,22 +175,67 @@ class ChoroplethMapper {
         if (!this.csvData || this.csvData.length === 0) return;
         
         const columns = Object.keys(this.csvData[0]);
+        
+        // Comprehensive patterns for flexible matching (case-insensitive)
         const suggestions = {
-            'county': ['FIPS', 'fips', 'county_fips', 'GEOID', 'geoid'],
-            'subcounty': ['GEOID', 'geoid', 'GEO id2', 'CCD', 'ccd_fips'],
-            'zip': ['ZIP', 'zip', 'zipcode', 'ZIP_CODE', 'ZCTA', 'zcta'],
-            'tract': ['FIPS', 'fips', 'tract', 'GEOID', 'geoid'],
-            'place': ['place', 'city', 'town', 'GEOID', 'geoid'],
-            'state': ['state', 'STATE', 'state_name', 'state_code', 'STUSPS']
+            'county': [
+                'fips', 'county_fips', 'countyfips', 'county fips',
+                'geoid', 'geo_id', 'geo id', 'geo', 
+                'geo display_label', 'geo_display_label', 'display_label',
+                'county', 'countycode', 'county_code', 'county code'
+            ],
+            'subcounty': [
+                'geoid', 'geo_id', 'geo id', 'geo',
+                'geo display_label', 'geo_display_label', 'display_label',
+                'ccd', 'subcounty', 'sub_county', 'sub county'
+            ],
+            'zip': [
+                'zip', 'zipcode', 'zip_code', 'zip code',
+                'zcta', 'zcta5', 'postal', 'postalcode', 'postal_code',
+                'geoid', 'geo_id', 'geo id', 'geo',
+                'geo display_label', 'geo_display_label', 'display_label'
+            ],
+            'tract': [
+                'tract', 'census_tract', 'census tract', 'tractcode',
+                'fips', 'geoid', 'geo_id', 'geo id', 'geo',
+                'geo display_label', 'geo_display_label', 'display_label'
+            ],
+            'place': [
+                'place', 'city', 'town', 'municipality',
+                'placefips', 'place_fips', 'place fips',
+                'geoid', 'geo_id', 'geo id', 'geo',
+                'geo display_label', 'geo_display_label', 'display_label'
+            ],
+            'state': [
+                'state', 'state_name', 'state name', 'statename',
+                'state_code', 'statecode', 'state code',
+                'stusps', 'state_abbr', 'state abbr', 'abbreviation'
+            ]
         };
         
         const suggested = suggestions[geoLevel] || [];
-        const match = columns.find(col => 
-            suggested.some(sug => col.toLowerCase().includes(sug.toLowerCase()))
+        
+        // Find best match - check exact match first, then partial
+        let match = null;
+        
+        // First try exact match (case-insensitive)
+        match = columns.find(col => 
+            suggested.some(sug => col.toLowerCase() === sug.toLowerCase())
         );
+        
+        // If no exact match, try contains (case-insensitive)
+        if (!match) {
+            match = columns.find(col => 
+                suggested.some(sug => col.toLowerCase().includes(sug.toLowerCase()) || 
+                                     sug.toLowerCase().includes(col.toLowerCase()))
+            );
+        }
         
         if (match) {
             joinSelect.value = match;
+            console.log(`Auto-selected column '${match}' for ${geoLevel} geography`);
+        } else {
+            console.log(`No matching column found for ${geoLevel}. Available columns:`, columns);
         }
     }
 
@@ -745,6 +790,11 @@ class ChoroplethMapper {
             const key = String(row[joinColumn]).trim();
             csvMap.set(key, row);
             
+            // Also store with leading zeros removed for ZIP codes
+            if (geoLevel === 'zip' && key.match(/^\d+$/)) {
+                csvMap.set(parseInt(key).toString(), row);
+            }
+            
             // For county-level data, also create name-based lookups
             if (geoLevel === 'county' && isNaN(key)) {
                 // It's a county name, not a FIPS code
@@ -860,8 +910,14 @@ class ChoroplethMapper {
                     ...feature,
                     properties: {
                         ...feature.properties,
-                        // Only add Display_label if it exists, and the data value
-                        Display_label: csvRecord.Display_label || csvRecord.Display_Label || undefined,
+                        // Check for Display_label in various formats
+                        Display_label: csvRecord.Display_label || 
+                                     csvRecord.Display_Label || 
+                                     csvRecord.display_label ||
+                                     csvRecord['GEO display_label'] ||
+                                     csvRecord['Geo Display_Label'] ||
+                                     csvRecord['geo display_label'] ||
+                                     undefined,
                         choropleth_value: parseFloat(csvRecord[dataColumn]) || 0
                     }
                 };
