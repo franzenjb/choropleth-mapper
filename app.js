@@ -623,7 +623,7 @@ class ChoroplethMapper {
         const geoIdFields = {
             'county': ['GEOID', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
             'subcounty': ['GEOID', 'COUSUBFP', 'COUSUBNS', 'COUSUB', 'CCD'],
-            'zip': ['ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10', 'ZCTA5CE', 'GEOID', 'ZCTA5', 'ZIP', 'ZIPCODE'],
+            'zip': ['GEOID', 'ZCTA5CE20', 'ZCTA5CE10', 'GEOID20', 'GEOID10', 'ZCTA5CE', 'ZCTA5', 'ZIP', 'ZIPCODE', 'ZCTA'],
             'tract': ['GEOID', 'TRACTCE', 'FIPS', 'TRACT'],
             'place': ['PLACEFIPS', 'GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
             'state': ['STUSPS', 'STATE_NAME', 'STATE_ABBR', 'STATE', 'STATEFP']
@@ -735,7 +735,29 @@ class ChoroplethMapper {
         if (matchCount === 0) {
             console.error('No matches found!');
             console.error('Available geographic fields in first feature:', Object.keys(this.geoData.features[0]?.properties || {}));
-            throw new Error('No matches found. Please check that your join column contains valid geography identifiers. Check the browser console for details.');
+            console.error('Sample values from your CSV column:', Array.from(csvMap.keys()).slice(0, 10));
+            console.error('Sample geographic IDs from map data:', sampleUnmatched.slice(0, 10));
+            console.error('Geography type:', geoLevel);
+            console.error('Join column:', joinColumn);
+            
+            let helpMessage = `No matches found between your CSV and the ${geoLevel} boundaries.\n\n`;
+            helpMessage += `Your CSV column "${joinColumn}" contains values like: ${Array.from(csvMap.keys()).slice(0, 3).join(', ')}\n`;
+            helpMessage += `Expected format for ${geoLevel}:\n`;
+            
+            if (geoLevel === 'zip') {
+                helpMessage += '• 5-digit ZIP codes (e.g., 33701, 02134)\n';
+            } else if (geoLevel === 'county') {
+                helpMessage += '• 5-digit FIPS codes (e.g., 12103) OR county names (e.g., "Pinellas County" or "Pinellas")\n';
+                helpMessage += '• If using county names, select a state filter\n';
+            } else if (geoLevel === 'place') {
+                helpMessage += '• 7-digit place FIPS codes (e.g., 1245000)\n';
+            } else if (geoLevel === 'tract') {
+                helpMessage += '• 11-digit census tract codes (e.g., 12103123456)\n';
+            } else if (geoLevel === 'subcounty') {
+                helpMessage += '• 10-digit CCD codes (e.g., 1210312345)\n';
+            }
+            
+            throw new Error(helpMessage);
         }
     }
 
