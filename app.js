@@ -194,34 +194,55 @@ class ChoroplethMapper {
         
         const columns = Object.keys(this.csvData[0]);
         
+        // First, always check for GEOID column - it's the most reliable identifier
+        const geoidColumn = columns.find(col => 
+            col.toUpperCase() === 'GEOID' || 
+            col.toUpperCase() === 'GEO_ID' ||
+            col.toUpperCase() === 'GEOID10' ||
+            col.toUpperCase() === 'GEOID20'
+        );
+        
+        if (geoidColumn) {
+            joinSelect.value = geoidColumn;
+            console.log(`🎯 Auto-selected GEOID column '${geoidColumn}' - optimal for reliable matching!`);
+            
+            // Show helpful info about GEOID
+            const sampleValue = this.csvData && this.csvData[0] ? String(this.csvData[0][geoidColumn]).trim() : null;
+            if (sampleValue) {
+                const length = sampleValue.length;
+                let geoType = '';
+                if (length === 2) geoType = 'State GEOID';
+                else if (length === 5) geoType = 'County GEOID';
+                else if (length === 7) geoType = 'Place/City GEOID';
+                else if (length === 11) geoType = 'Census Tract GEOID';
+                else if (length === 12) geoType = 'Block Group GEOID';
+                
+                if (geoType) {
+                    console.log(`Detected: ${geoType} (${length} digits)`);
+                }
+            }
+            return;
+        }
+        
+        // Otherwise use geography-specific suggestions
         const suggestions = {
             'county': [
                 'fips', 'county_fips', 'countyfips', 'county fips',
-                'geoid', 'geo_id', 'geo id', 'geo', 
-                'geo display_label', 'geo_display_label', 'display_label',
                 'county', 'countycode', 'county_code', 'county code'
             ],
             'subcounty': [
-                'geoid', 'geo_id', 'geo id', 'geo',
-                'geo display_label', 'geo_display_label', 'display_label',
                 'ccd', 'subcounty', 'sub_county', 'sub county'
             ],
             'zip': [
                 'zip', 'zipcode', 'zip_code', 'zip code',
-                'zcta', 'zcta5', 'postal', 'postalcode', 'postal_code',
-                'geoid', 'geo_id', 'geo id', 'geo',
-                'geo display_label', 'geo_display_label', 'display_label'
+                'zcta', 'zcta5', 'postal', 'postalcode', 'postal_code'
             ],
             'tract': [
-                'tract', 'census_tract', 'census tract', 'tractcode',
-                'fips', 'geoid', 'geo_id', 'geo id', 'geo',
-                'geo display_label', 'geo_display_label', 'display_label'
+                'tract', 'census_tract', 'census tract', 'tractcode'
             ],
             'place': [
                 'place', 'city', 'town', 'municipality',
-                'placefips', 'place_fips', 'place fips',
-                'geoid', 'geo_id', 'geo id', 'geo',
-                'geo display_label', 'geo_display_label', 'display_label'
+                'placefips', 'place_fips', 'place fips'
             ],
             'state': [
                 'state', 'state_name', 'state name', 'statename',
@@ -934,13 +955,14 @@ class ChoroplethMapper {
     }
 
     joinDataWithGeography(normalizedData, geoLevel, joinColumn, dataColumn) {
+        // GEOID should always be checked first as it's the most reliable identifier
         const geoIdFields = {
-            'county': ['id', 'GEOID', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
+            'county': ['GEOID', 'id', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
             'subcounty': ['GEOID', 'COUSUBFP', 'COUSUBNS', 'COUSUB', 'CCD'],
-            'zip': ['ZCTA5CE10', 'ZCTA5CE20', 'GEOID10', 'GEOID20', 'GEOID', 'ZCTA5CE', 'ZCTA5', 'ZIP', 'ZIPCODE', 'ZCTA', 'BASENAME'],
+            'zip': ['ZIP', 'ZCTA5', 'ZCTA5CE10', 'ZCTA5CE20', 'GEOID10', 'GEOID20', 'GEOID', 'ZCTA5CE', 'ZIPCODE', 'ZCTA', 'BASENAME'],
             'tract': ['GEOID', 'TRACTCE', 'FIPS', 'TRACT'],
-            'place': ['PLACEFIPS', 'GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
-            'state': ['name', 'NAME', 'STUSPS', 'STATE_NAME', 'STATE_ABBR', 'STATE', 'STATEFP']
+            'place': ['GEOID', 'PLACEFIPS', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
+            'state': ['GEOID', 'STATEFP', 'STUSPS', 'name', 'NAME', 'STATE_NAME', 'STATE_ABBR', 'STATE']
         };
         
         const possibleFields = geoIdFields[geoLevel] || ['GEOID', 'FIPS'];

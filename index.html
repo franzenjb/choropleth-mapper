@@ -26,11 +26,20 @@
                 <div class="sidebar-content">
                     <h3>Supported Geography Types</h3>
                     
+                    <div class="format-section" style="background: #e8f4f8; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+                        <h4>📍 Using GEOIDs (Recommended)</h4>
+                        <p><strong>GEOIDs are unique Census identifiers - always preferred!</strong></p>
+                        <p>• County: 5 digits (e.g., 23005 = Cumberland, ME)</p>
+                        <p>• Tract: 11 digits (e.g., 23005010100)</p>
+                        <p>• Block Group: 12 digits (e.g., 230050101001)</p>
+                        <p>• Place: 7 digits (e.g., 2360545 = Portland, ME)</p>
+                    </div>
+                    
                     <div class="format-section">
                         <h4>Counties</h4>
-                        <p>Column: <code>GEOID</code> or <code>County Name</code></p>
-                        <p>Format: 5-digit FIPS or Name</p>
-                        <p>Examples: 12001, "York County", "York"</p>
+                        <p>Column: <code>GEOID</code>, <code>FIPS</code>, or <code>County Name</code></p>
+                        <p>Format: 5-digit FIPS/GEOID or Name</p>
+                        <p>Examples: 23005, "Cumberland County", "Cumberland"</p>
                     </div>
                     
                     <div class="format-section">
@@ -143,12 +152,12 @@
                                 <label for="geoLevel" class="form-label">Geographic Level</label>
                                 <select id="geoLevel" class="form-select">
                                     <option value="">Select geography type...</option>
-                                    <option value="county">County</option>
-                                    <option value="subcounty">Sub-County (CCD)</option>
-                                    <option value="zip">ZIP Code (ZCTA)</option>
-                                    <option value="tract">Census Tract</option>
-                                    <option value="place">Place/City</option>
-                                    <option value="state">State</option>
+                                    <option value="county">County (Name, FIPS, or GEOID)</option>
+                                    <option value="subcounty">Sub-County (CCD GEOID)</option>
+                                    <option value="zip">ZIP Code (5-digit)</option>
+                                    <option value="tract">Census Tract (11-digit GEOID)</option>
+                                    <option value="place">Place/City (7-digit GEOID)</option>
+                                    <option value="state">State (Name, Abbrev, or FIPS)</option>
                                 </select>
                             </div>
 
