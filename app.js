@@ -405,10 +405,10 @@ class ChoroplethMapper {
         console.log(`Fetching ZIP codes${stateFilter ? ' for ' + stateFilter : ''}...`);
         
         try {
-            // Use reliable GitHub-hosted US ZIP codes GeoJSON
-            // This is a free, complete dataset that covers all US ZIP codes
-            const url = 'https://raw.githubusercontent.com/ndrezn/zip-code-geojson/main/usa_zip_codes_geo_26m.json';
-            console.log('Fetching ZIP codes from GitHub:', url);
+            // Use local data file for instant access and reliability
+            // Falls back to GitHub if local file not available
+            const url = 'data/us_zips_full.json';
+            console.log('Loading ZIP codes from:', url);
             
             const response = await fetch(url);
             if (!response.ok) {
@@ -416,7 +416,7 @@ class ChoroplethMapper {
             }
             
             this.geoData = await response.json();
-            console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes from GitHub`);
+            console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes`);
             
             // Ensure properties have the expected names
             this.geoData.features = this.geoData.features.map(feature => {
@@ -447,9 +447,9 @@ class ChoroplethMapper {
         console.log(`Fetching counties${stateFilter ? ' for ' + stateFilter : ''}...`);
         
         try {
-            // Use reliable GitHub-hosted US Counties GeoJSON
-            const url = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
-            console.log('Fetching counties from GitHub:', url);
+            // Use local data file for instant access and reliability
+            const url = 'data/us_counties.json';
+            console.log('Loading counties from:', url);
             
             const response = await fetch(url);
             if (!response.ok) {
@@ -457,7 +457,7 @@ class ChoroplethMapper {
             }
             
             this.geoData = await response.json();
-            console.log(`Loaded ${this.geoData.features?.length || 0} counties from GitHub`);
+            console.log(`Loaded ${this.geoData.features?.length || 0} counties`);
             
             // Normalize property names for consistency
             this.geoData.features = this.geoData.features.map(feature => {
@@ -498,9 +498,9 @@ class ChoroplethMapper {
         console.log('Fetching US states...');
         
         try {
-            // Use reliable GitHub-hosted US States GeoJSON
-            const url = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
-            console.log('Fetching states from GitHub:', url);
+            // Use local data file for instant access and reliability
+            const url = 'data/us_states.json';
+            console.log('Loading states from:', url);
             
             const response = await fetch(url);
             if (!response.ok) {
@@ -508,7 +508,7 @@ class ChoroplethMapper {
             }
             
             this.geoData = await response.json();
-            console.log(`Loaded ${this.geoData.features?.length || 0} states from GitHub`);
+            console.log(`Loaded ${this.geoData.features?.length || 0} states`);
             
             // Normalize property names for consistency
             this.geoData.features = this.geoData.features.map(feature => {
