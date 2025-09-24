@@ -853,29 +853,25 @@ class ChoroplethMapper {
                 // Get the appropriate display name based on geography type
                 let displayName = 'Unknown';
                 
-                // For ZIP codes, ALWAYS show the ZIP code, not county or other fields
+                // Show the appropriate identifier based on geography type
                 if (geoLevel === 'zip') {
                     // For ZIP codes, show the ZIP code itself
                     const zipCode = feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || feature.properties.ZIP || feature.properties.GEOID || feature.properties.ZCTA || 'Unknown';
                     displayName = `ZIP ${zipCode}`;
-                } else if (feature.properties.Display_label) {
-                    // For other geographies, use Display_label if available
-                    displayName = feature.properties.Display_label;
-                } else if (feature.properties.Location) {
-                    displayName = feature.properties.Location;
-                } else if (feature.properties.County) {
-                    displayName = feature.properties.County;
-                } else if (feature.properties.Place) {
-                    displayName = feature.properties.Place;
                 } else if (geoLevel === 'county') {
+                    // For counties, show county name
                     displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
                 } else if (geoLevel === 'place') {
+                    // For places/cities, show place name
                     displayName = feature.properties.NAME || feature.properties.PLACENAME || feature.properties.name || 'Unknown Place';
                 } else if (geoLevel === 'tract') {
+                    // For census tracts, show tract number
                     displayName = `Tract ${feature.properties.NAME || feature.properties.TRACTCE || feature.properties.GEOID || 'Unknown'}`;
                 } else if (geoLevel === 'subcounty') {
+                    // For sub-counties, show sub-county name
                     displayName = feature.properties.NAME || feature.properties.NAMELSAD || 'Unknown Sub-County';
                 } else if (geoLevel === 'state') {
+                    // For states, show state name
                     displayName = feature.properties.NAME || feature.properties.STATE_NAME || 'Unknown State';
                 }
                 
