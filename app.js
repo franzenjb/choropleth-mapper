@@ -847,9 +847,38 @@ class ChoroplethMapper {
             }),
             onEachFeature: (feature, layer) => {
                 const dataColumn = document.getElementById('dataColumn').value;
+                const geoLevel = document.getElementById('geoLevel').value;
                 const value = feature.properties.choropleth_value;
+                
+                // Get the appropriate display name based on geography type
+                let displayName = 'Unknown';
+                
+                // First try to use any Display_label or location name from the joined CSV data
+                if (feature.properties.Display_label) {
+                    displayName = feature.properties.Display_label;
+                } else if (feature.properties.Location) {
+                    displayName = feature.properties.Location;
+                } else if (feature.properties.County) {
+                    displayName = feature.properties.County;
+                } else if (feature.properties.Place) {
+                    displayName = feature.properties.Place;
+                } else if (geoLevel === 'zip') {
+                    // For ZIP codes, show the ZIP code itself
+                    displayName = `ZIP ${feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || feature.properties.ZIP || feature.properties.GEOID || 'Unknown'}`;
+                } else if (geoLevel === 'county') {
+                    displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
+                } else if (geoLevel === 'place') {
+                    displayName = feature.properties.NAME || feature.properties.PLACENAME || feature.properties.name || 'Unknown Place';
+                } else if (geoLevel === 'tract') {
+                    displayName = `Tract ${feature.properties.NAME || feature.properties.TRACTCE || feature.properties.GEOID || 'Unknown'}`;
+                } else if (geoLevel === 'subcounty') {
+                    displayName = feature.properties.NAME || feature.properties.NAMELSAD || 'Unknown Sub-County';
+                } else if (geoLevel === 'state') {
+                    displayName = feature.properties.NAME || feature.properties.STATE_NAME || 'Unknown State';
+                }
+                
                 layer.bindPopup(`
-                    <strong>${feature.properties.NAME || feature.properties.name || 'Unknown'}</strong><br>
+                    <strong>${displayName}</strong><br>
                     ${dataColumn}: ${value != null ? value.toLocaleString() : 'No data'}
                 `);
             }
