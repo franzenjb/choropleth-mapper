@@ -289,6 +289,10 @@ class ChoroplethMapper {
         const states = new Set();
         const joinColumn = document.getElementById('joinColumn').value;
         
+        console.log('detectStatesFromData: joinColumn =', joinColumn);
+        console.log('detectStatesFromData: csvData exists?', !!this.csvData);
+        console.log('detectStatesFromData: csvData length?', this.csvData?.length);
+        
         if (this.csvData && joinColumn) {
             this.csvData.forEach(row => {
                 const value = row[joinColumn];
@@ -298,6 +302,7 @@ class ChoroplethMapper {
                     if (fipsStr.match(/^\d{4,5}$/)) {
                         const stateFips = fipsStr.padStart(5, '0').substring(0, 2);
                         if (stateFips >= '01' && stateFips <= '72') {
+                            console.log(`Found state FIPS ${stateFips} from value ${value}`);
                             states.add(stateFips);
                         }
                     }
@@ -305,6 +310,7 @@ class ChoroplethMapper {
             });
         }
         
+        console.log('detectStatesFromData: final states =', Array.from(states));
         return states;
     }
     
@@ -326,9 +332,14 @@ class ChoroplethMapper {
     }
 
     async fetchGeographicData(geoLevel, stateFilter) {
+        console.log('fetchGeographicData called with:', { geoLevel, stateFilter });
+        
         // If no state filter selected, detect states from FIPS codes and fetch each
         if (!stateFilter && geoLevel === 'county') {
+            console.log('No state filter, attempting to detect states from data...');
             const detectedStates = this.detectStatesFromData();
+            console.log('Detected states:', detectedStates);
+            
             if (detectedStates.size > 0 && detectedStates.size <= 10) {
                 console.log(`Detected ${detectedStates.size} states from FIPS codes:`, Array.from(detectedStates));
                 const allFeatures = [];

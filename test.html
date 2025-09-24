@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Choropleth Mapper</title>
+</head>
+<body>
+    <h1>Testing Choropleth Mapper</h1>
+    <button onclick="testScript()">Test Script Loading</button>
+    <div id="output"></div>
+    
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        console.log('Scripts loading...');
+        
+        function testScript() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            
+            // Test if libraries loaded
+            if (typeof Papa !== 'undefined') {
+                output.innerHTML += '<p>✓ PapaParse loaded</p>';
+            } else {
+                output.innerHTML += '<p>✗ PapaParse NOT loaded</p>';
+            }
+            
+            if (typeof turf !== 'undefined') {
+                output.innerHTML += '<p>✓ Turf loaded</p>';
+            } else {
+                output.innerHTML += '<p>✗ Turf NOT loaded</p>';
+            }
+            
+            if (typeof L !== 'undefined') {
+                output.innerHTML += '<p>✓ Leaflet loaded</p>';
+            } else {
+                output.innerHTML += '<p>✗ Leaflet NOT loaded</p>';
+            }
+        }
+        
+        // Load app.js and check for errors
+        const script = document.createElement('script');
+        script.src = 'app.js';
+        script.onload = () => {
+            console.log('app.js loaded successfully');
+            document.getElementById('output').innerHTML += '<p>✓ app.js loaded</p>';
+        };
+        script.onerror = (e) => {
+            console.error('app.js failed to load:', e);
+            document.getElementById('output').innerHTML += '<p>✗ app.js failed to load</p>';
+        };
+        document.body.appendChild(script);
+        
+        // Listen for any errors
+        window.addEventListener('error', (e) => {
+            console.error('JavaScript Error:', e.message, 'at line', e.lineno);
+            document.getElementById('output').innerHTML += `<p style="color:red">Error: ${e.message} at line ${e.lineno}</p>`;
+        });
+    </script>
+</body>
+</html>
