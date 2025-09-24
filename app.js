@@ -418,6 +418,39 @@ class ChoroplethMapper {
             return;
         }
         
+        if (geoLevel === 'subcounty') {
+            // Subcounty/CCD data requires special handling
+            throw new Error(`County Subdivisions (CCDs/MCDs) are not yet available. 
+                
+Please use one of these supported geography types:
+• ZIP Codes (5-digit)
+• Counties (FIPS or name)
+• States (name or abbreviation)
+
+Subcounty support is on our roadmap. For now, you can:
+1. Use county-level data instead
+2. Upload pre-processed subcounty GeoJSON if you have it
+3. Contact support for custom subcounty data needs`);
+        }
+        
+        if (geoLevel === 'tract') {
+            throw new Error(`Census Tracts are coming soon!
+                
+Currently supported geography types:
+• ZIP Codes (5-digit)
+• Counties (FIPS or name)
+• States (name or abbreviation)`);
+        }
+        
+        if (geoLevel === 'place') {
+            throw new Error(`Places/Cities are coming soon!
+                
+Currently supported geography types:
+• ZIP Codes (5-digit)
+• Counties (FIPS or name)  
+• States (name or abbreviation)`);
+        }
+        
         // For other geography types, show error
         throw new Error(`Geography level '${geoLevel}' is not yet implemented. Currently supported: ZIP, County, State`);
     }

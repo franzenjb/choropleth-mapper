@@ -152,12 +152,12 @@
                                 <label for="geoLevel" class="form-label">Geographic Level</label>
                                 <select id="geoLevel" class="form-select">
                                     <option value="">Select geography type...</option>
-                                    <option value="county">County (Name, FIPS, or GEOID)</option>
-                                    <option value="subcounty">Sub-County (CCD GEOID)</option>
-                                    <option value="zip">ZIP Code (5-digit)</option>
-                                    <option value="tract">Census Tract (11-digit GEOID)</option>
-                                    <option value="place">Place/City (7-digit GEOID)</option>
-                                    <option value="state">State (Name, Abbrev, or FIPS)</option>
+                                    <option value="zip">✅ ZIP Code (5-digit)</option>
+                                    <option value="county">✅ County (Name, FIPS, or GEOID)</option>
+                                    <option value="state">✅ State (Name, Abbrev, or FIPS)</option>
+                                    <option value="subcounty" disabled>🚧 Sub-County (Coming Soon)</option>
+                                    <option value="tract" disabled>🚧 Census Tract (Coming Soon)</option>
+                                    <option value="place" disabled>🚧 Place/City (Coming Soon)</option>
                                 </select>
                             </div>
 
@@ -345,7 +345,7 @@
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/shpwrite@0.3.2/shpwrite.min.js"></script>
-    <script src="app.js?v=2.1"></script>
+    <script src="app.js?v=2.2"></script>
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
