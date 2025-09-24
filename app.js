@@ -22,17 +22,21 @@ class ChoroplethMapper {
     }
     
     showVersion() {
-        // This will be updated automatically on each build
-        const buildTime = 'Sep 23, 2025 01:26 PM ET';
+        // Show current timestamp
+        const now = new Date();
+        const buildTime = now.toLocaleString('en-US', {
+            timeZone: 'America/New_York',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        }).replace(',', ',').replace(' at', '');
+        
         const versionDiv = document.getElementById('versionInfo');
         if (versionDiv) {
-            if (buildTime === 'BUILD_TIMESTAMP') {
-                // Development mode
-                versionDiv.innerHTML = `Dev Mode | ${new Date().toLocaleString('en-US', {timeZone: 'America/New_York'})}`;
-            } else {
-                // Production - show when last built
-                versionDiv.innerHTML = `Updated: ${buildTime}`;
-            }
+            versionDiv.innerHTML = `Updated: ${buildTime} ET`;
         }
     }
 
