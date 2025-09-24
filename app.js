@@ -302,23 +302,35 @@ class ChoroplethMapper {
     detectStatesFromData() {
         const states = new Set();
         const joinColumn = document.getElementById('joinColumn').value;
+        const geoLevel = document.getElementById('geoLevel').value;
         
         console.log('detectStatesFromData: joinColumn =', joinColumn);
+        console.log('detectStatesFromData: geoLevel =', geoLevel);
         console.log('detectStatesFromData: csvData exists?', !!this.csvData);
         console.log('detectStatesFromData: csvData length?', this.csvData?.length);
         
         if (this.csvData && joinColumn) {
             this.csvData.forEach(row => {
                 const value = row[joinColumn];
-                // Extract state FIPS from county FIPS (first 2 digits)
+                // Extract state FIPS from various FIPS formats
                 if (value && value.length >= 2) {
                     const fipsStr = value.toString().trim();
+                    let stateFips = null;
+                    
                     if (fipsStr.match(/^\d{4,5}$/)) {
-                        const stateFips = fipsStr.padStart(5, '0').substring(0, 2);
-                        if (stateFips >= '01' && stateFips <= '72') {
-                            console.log(`Found state FIPS ${stateFips} from value ${value}`);
-                            states.add(stateFips);
-                        }
+                        // County FIPS (4-5 digits)
+                        stateFips = fipsStr.padStart(5, '0').substring(0, 2);
+                    } else if (fipsStr.match(/^\d{7}$/)) {
+                        // Place FIPS (7 digits) - first 2 digits are state
+                        stateFips = fipsStr.substring(0, 2);
+                    } else if (fipsStr.match(/^\d{10,11}$/)) {
+                        // Census tract or CCD - first 2 digits are state
+                        stateFips = fipsStr.substring(0, 2);
+                    }
+                    
+                    if (stateFips && stateFips >= '01' && stateFips <= '72') {
+                        console.log(`Found state FIPS ${stateFips} from value ${value}`);
+                        states.add(stateFips);
                     }
                 }
             });
@@ -349,7 +361,7 @@ class ChoroplethMapper {
         console.log('fetchGeographicData called with:', { geoLevel, stateFilter });
         
         // If no state filter selected, detect states from FIPS codes and fetch each
-        if (!stateFilter && geoLevel === 'county') {
+        if (!stateFilter && (geoLevel === 'county' || geoLevel === 'place')) {
             console.log('No state filter, attempting to detect states from data...');
             const detectedStates = this.detectStatesFromData();
             console.log('Detected states:', detectedStates);
