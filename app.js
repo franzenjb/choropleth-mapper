@@ -422,6 +422,11 @@ class ChoroplethMapper {
                     if (response.ok) {
                         this.geoData = await response.json();
                         console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes from GitHub`);
+                        // Log sample feature to see field names
+                        if (this.geoData.features && this.geoData.features.length > 0) {
+                            console.log('Florida ZIP feature fields:', Object.keys(this.geoData.features[0].properties));
+                            console.log('Sample FL ZIP feature:', this.geoData.features[0].properties);
+                        }
                         return;
                     }
                 } catch (error) {
@@ -1051,7 +1056,22 @@ class ChoroplethMapper {
                 if (!displayName) {
                     if (geoLevel === 'zip') {
                         // For ZIP codes, show the ZIP code itself
-                        const zipCode = feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || feature.properties.ZIP || feature.properties.GEOID || feature.properties.ZCTA || 'Unknown';
+                        // Debug: log what fields we have
+                        if (displayName === 'Unknown' || !displayName) {
+                            console.log('ZIP feature properties:', Object.keys(feature.properties));
+                            console.log('Sample ZIP values:', {
+                                ZCTA5CE20: feature.properties.ZCTA5CE20,
+                                ZCTA5CE10: feature.properties.ZCTA5CE10,
+                                ZIP: feature.properties.ZIP,
+                                GEOID: feature.properties.GEOID,
+                                ZCTA: feature.properties.ZCTA,
+                                ZCTA5: feature.properties.ZCTA5
+                            });
+                        }
+                        const zipCode = feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || 
+                                       feature.properties.ZIP || feature.properties.GEOID || 
+                                       feature.properties.ZCTA || feature.properties.ZCTA5 || 
+                                       feature.properties.ZIPCODE || 'Unknown';
                         displayName = `ZIP ${zipCode}`;
                     } else if (geoLevel === 'county') {
                         // For counties, show county name
