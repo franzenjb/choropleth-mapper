@@ -342,33 +342,34 @@ class ChoroplethMapper {
         console.log('Detected states from ZIPs:', Array.from(detectedStates));
         
         if (detectedStates.size > 0) {
-            console.log(`Will fetch ZIP codes from TIGER and filter for ${detectedStates.size} states`);
+            console.log(`Will fetch ZIP codes for ${detectedStates.size} states`);
             
-            await this.fetchSingleStateData('zip', null);
+            // Fetch each state's ZIP codes and combine
+            const allFeatures = [];
             
-            if (this.geoData && this.geoData.features) {
-                const originalCount = this.geoData.features.length;
-                
-                const allRanges = [];
-                for (const state of detectedStates) {
-                    const ranges = this.getZipRangesForState(state);
-                    if (ranges) allRanges.push(...ranges);
+            for (const state of detectedStates) {
+                try {
+                    console.log(`Fetching ZIP codes for ${state}...`);
+                    await this.fetchZipCodes(state);
+                    
+                    if (this.geoData && this.geoData.features) {
+                        allFeatures.push(...this.geoData.features);
+                        console.log(`  Added ${this.geoData.features.length} ZIP codes from ${state}`);
+                    }
+                } catch (error) {
+                    console.error(`  Failed to fetch ${state} ZIP codes:`, error.message);
+                    // Continue with other states even if one fails
                 }
-                
-                this.geoData.features = this.geoData.features.filter(f => {
-                    const zip = f.properties.ZCTA5 || f.properties.BASENAME || 
-                               f.properties.ZCTA || f.properties.NAME || '';
-                    
-                    if (!zip) return false;
-                    
-                    const zipPrefix = parseInt(zip.substring(0, 3));
-                    
-                    return allRanges.some(range => 
-                        zipPrefix >= range.start && zipPrefix <= range.end
-                    );
-                });
-                
-                console.log(`Filtered ${originalCount} ZIP codes to ${this.geoData.features.length} for states: ${Array.from(detectedStates).join(', ')}`);
+            }
+            
+            if (allFeatures.length > 0) {
+                this.geoData = {
+                    type: 'FeatureCollection',
+                    features: allFeatures
+                };
+                console.log(`Total ZIP codes loaded: ${allFeatures.length} for states: ${Array.from(detectedStates).join(', ')}`);
+            } else {
+                throw new Error(`Unable to fetch ZIP code boundaries for states: ${Array.from(detectedStates).join(', ')}. Please select a specific state.`);
             }
         }
     }
@@ -403,6 +404,12 @@ class ChoroplethMapper {
     }
 
     async fetchSingleStateData(geoLevel, stateFilter) {
+        // Special handling for ZIP codes
+        if (geoLevel === 'zip') {
+            await this.fetchZipCodes(stateFilter);
+            return;
+        }
+        
         const tigerUrl = this.buildTigerUrl(geoLevel, stateFilter);
         console.log(`Fetching from TIGER: ${tigerUrl}`);
         
@@ -421,24 +428,83 @@ class ChoroplethMapper {
             
             console.log(`Loaded ${this.geoData.features.length} ${geoLevel} features from TIGER`);
             
-            // Apply state-specific filtering for ZIP codes if needed
-            if (geoLevel === 'zip' && stateFilter) {
-                this.filterZipCodesByState(stateFilter);
-            }
-            
         } catch (error) {
             console.error('TIGER API error:', error);
             throw new Error(`Failed to fetch geographic boundaries from Census TIGER service: ${error.message}`);
         }
     }
+    
+    async fetchZipCodes(stateFilter) {
+        console.log(`Fetching ZIP codes${stateFilter ? ' for ' + stateFilter : ''}...`);
+        
+        try {
+            // For ZIP codes, we need to use a working endpoint
+            // The Census TIGER service uses ArcGIS REST API format (but it's free government data)
+            let url = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer/2/query';
+            
+            // Build query parameters
+            const params = new URLSearchParams({
+                where: '1=1',  // Get all ZIP codes, we'll filter client-side
+                outFields: 'ZCTA5,GEOID,NAME',
+                f: 'geojson',
+                outSR: '4326',
+                returnGeometry: 'true',
+                geometryPrecision: '4',
+                resultRecordCount: '5000'  // Get in chunks
+            });
+            
+            url = `${url}?${params}`;
+            console.log('Fetching from:', url);
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                // If TIGER fails, try a fallback
+                console.log('TIGER failed, trying fallback for state-specific data...');
+                
+                // Use public GitHub repo for specific states (if available)
+                const stateFallbacks = {
+                    'FL': 'https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/fl_florida_zip_codes_geo.min.json'
+                };
+                
+                if (stateFilter && stateFallbacks[stateFilter]) {
+                    const fallbackResponse = await fetch(stateFallbacks[stateFilter]);
+                    if (fallbackResponse.ok) {
+                        this.geoData = await fallbackResponse.json();
+                        console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes from fallback`);
+                        return;
+                    }
+                }
+                
+                throw new Error(`Failed to fetch ZIP codes: ${response.status}`);
+            }
+            
+            this.geoData = await response.json();
+            console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes from TIGER`);
+            
+            // Apply state filtering if needed
+            if (stateFilter) {
+                this.filterZipCodesByState(stateFilter);
+            }
+            
+        } catch (error) {
+            console.error('ZIP code fetch error:', error);
+            throw new Error(`Failed to fetch ZIP code boundaries. Please try selecting a specific state or use county-level data instead.`);
+        }
+    }
 
     buildTigerUrl(geoLevel, stateFilter) {
+        // For ZIP codes, use Census Bureau's official dataset
+        if (geoLevel === 'zip') {
+            // Use Census Bureau's 2020 ZCTA (ZIP Code Tabulation Areas) 
+            // This is a smaller simplified dataset good for web mapping
+            return 'https://www2.census.gov/geo/tiger/TIGER2020/ZCTA520/tl_2020_us_zcta520.zip';
+        }
+        
         const tigerBase = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb';
         
         const tigerEndpoints = {
             'county': '/State_County/MapServer/1',
             'subcounty': '/Places_CouSub_ConCity_SubMCD/MapServer/1',
-            'zip': '/PUMA_TAD_TAZ_UGA_ZCTA/MapServer/2',
             'tract': '/Tracts_Blocks/MapServer/0',
             'place': '/Places_CouSub_ConCity_SubMCD/MapServer/0',
             'state': '/State_County/MapServer/0'
