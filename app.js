@@ -420,12 +420,15 @@ class ChoroplethMapper {
             
             // Ensure properties have the expected names
             this.geoData.features = this.geoData.features.map(feature => {
+                // The GitHub dataset uses ZCTA5CE10 as the ZIP code field
                 if (!feature.properties.ZCTA5 && feature.properties.ZCTA5CE10) {
                     feature.properties.ZCTA5 = feature.properties.ZCTA5CE10;
                 }
                 if (!feature.properties.BASENAME) {
-                    feature.properties.BASENAME = feature.properties.ZCTA5 || feature.properties.ZCTA5CE10 || '';
+                    feature.properties.BASENAME = feature.properties.ZCTA5CE10 || '';
                 }
+                // Also add the plain ZIP for easier matching
+                feature.properties.ZIP = feature.properties.ZCTA5CE10 || '';
                 return feature;
             });
             
@@ -785,7 +788,7 @@ class ChoroplethMapper {
     }
 
     normalizeAndAggregateData(joinColumn, dataColumn, geoLevel) {
-        // First, normalize ZIP codes if needed
+        // Normalize IDs based on geography level
         if (geoLevel === 'zip') {
             this.csvData = this.csvData.map(row => {
                 const key = String(row[joinColumn]).trim();
@@ -798,10 +801,27 @@ class ChoroplethMapper {
                 }
                 return row;
             });
+        } else if (geoLevel === 'county') {
+            // Normalize county FIPS to 5 digits
+            this.csvData = this.csvData.map(row => {
+                const key = String(row[joinColumn]).trim();
+                if (key.match(/^\d+$/)) {
+                    row[joinColumn] = key.padStart(5, '0');
+                }
+                return row;
+            });
+        } else if (geoLevel === 'state') {
+            // Normalize state names
+            this.csvData = this.csvData.map(row => {
+                const key = String(row[joinColumn]).trim();
+                // Remove 'State' suffix if present and normalize case
+                row[joinColumn] = key.replace(/\s+State$/i, '').trim();
+                return row;
+            });
         }
         
         // Check if we need aggregation
-        const needsAggregation = this.checkIfAggregationNeeded(joinColumn);
+        const needsAggregation = this.checkIfAggregationNeeded(joinColumn, dataColumn);
         
         if (needsAggregation.required) {
             return this.aggregateData(joinColumn, dataColumn, needsAggregation.isNumeric);
@@ -810,7 +830,7 @@ class ChoroplethMapper {
         }
     }
 
-    checkIfAggregationNeeded(joinColumn) {
+    checkIfAggregationNeeded(joinColumn, dataColumn) {
         const geoIdCounts = new Map();
         this.csvData.forEach(row => {
             const key = String(row[joinColumn]).trim();
@@ -915,12 +935,12 @@ class ChoroplethMapper {
 
     joinDataWithGeography(normalizedData, geoLevel, joinColumn, dataColumn) {
         const geoIdFields = {
-            'county': ['GEOID', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
+            'county': ['id', 'GEOID', 'FIPS', 'COUNTYFP', 'COUNTYNS', 'COUNTY'],
             'subcounty': ['GEOID', 'COUSUBFP', 'COUSUBNS', 'COUSUB', 'CCD'],
-            'zip': ['ZCTA5CE10', 'ZCTA5CE20', 'GEOID10', 'GEOID20', 'GEOID', 'ZCTA5CE', 'ZCTA5', 'ZIP', 'ZIPCODE', 'ZCTA'],
+            'zip': ['ZCTA5CE10', 'ZCTA5CE20', 'GEOID10', 'GEOID20', 'GEOID', 'ZCTA5CE', 'ZCTA5', 'ZIP', 'ZIPCODE', 'ZCTA', 'BASENAME'],
             'tract': ['GEOID', 'TRACTCE', 'FIPS', 'TRACT'],
             'place': ['PLACEFIPS', 'GEOID', 'PLACEFP', 'PLACE_FIPS', 'PLACENS'],
-            'state': ['STUSPS', 'STATE_NAME', 'STATE_ABBR', 'STATE', 'STATEFP']
+            'state': ['name', 'NAME', 'STUSPS', 'STATE_NAME', 'STATE_ABBR', 'STATE', 'STATEFP']
         };
         
         const possibleFields = geoIdFields[geoLevel] || ['GEOID', 'FIPS'];
@@ -945,7 +965,27 @@ class ChoroplethMapper {
     }
 
     findMatchingRecord(feature, possibleFields, csvMap, countyNameMap, geoLevel) {
-        // Try FIPS/ID matching first
+        // Special handling for states - case insensitive name matching
+        if (geoLevel === 'state') {
+            for (const field of possibleFields) {
+                if (feature.properties[field]) {
+                    const geoId = String(feature.properties[field]).trim();
+                    
+                    // Try direct match
+                    if (csvMap.has(geoId)) return csvMap.get(geoId);
+                    
+                    // Try case-insensitive match for state names
+                    for (const [key, value] of csvMap.entries()) {
+                        if (key.toLowerCase() === geoId.toLowerCase()) {
+                            return value;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // For other geography levels
         for (const field of possibleFields) {
             if (feature.properties[field]) {
                 const geoId = String(feature.properties[field]).trim();
@@ -953,16 +993,25 @@ class ChoroplethMapper {
                 // Try direct match
                 if (csvMap.has(geoId)) return csvMap.get(geoId);
                 
-                // Try padded
-                const paddedId = geoId.padStart(5, '0');
-                if (csvMap.has(paddedId)) return csvMap.get(paddedId);
-                
-                // Try unpadded
-                const unpaddedId = geoId.replace(/^0+/, '');
-                if (csvMap.has(unpaddedId)) return csvMap.get(unpaddedId);
+                // For county, try with padding
+                if (geoLevel === 'county') {
+                    const paddedId = geoId.padStart(5, '0');
+                    if (csvMap.has(paddedId)) return csvMap.get(paddedId);
+                    
+                    const unpaddedId = geoId.replace(/^0+/, '');
+                    if (csvMap.has(unpaddedId)) return csvMap.get(unpaddedId);
+                }
                 
                 // Try ZIP code variations  
                 if (geoLevel === 'zip') {
+                    // Try padded
+                    const paddedId = geoId.padStart(5, '0');
+                    if (csvMap.has(paddedId)) return csvMap.get(paddedId);
+                    
+                    // Try unpadded
+                    const unpaddedId = geoId.replace(/^0+/, '');
+                    if (csvMap.has(unpaddedId)) return csvMap.get(unpaddedId);
+                    
                     // Handle GitHub data format (GEOID10 like "0906810" -> extract "06810")
                     if (geoId.match(/^\d{7}$/) && geoId.length === 7) {
                         const zipFromGeoId = geoId.substring(2); // Remove state FIPS prefix
