@@ -1279,25 +1279,45 @@ class ChoroplethMapper {
     }
 
     getDisplayName(feature, geoLevel, useCustomLabels) {
-        let displayName = 'Unknown';
+        let displayName = null;
         
-        if (useCustomLabels) {
-            displayName = feature.properties.Display_label || null;
+        // First, check for common location/name columns from the CSV
+        // These are preserved from the original CSV data
+        displayName = feature.properties.Location || 
+                     feature.properties.location ||
+                     feature.properties.Display_label || 
+                     feature.properties.display_label ||
+                     feature.properties.Name ||
+                     feature.properties.name ||
+                     feature.properties.Label ||
+                     feature.properties.label ||
+                     feature.properties.Place ||
+                     feature.properties.place ||
+                     feature.properties.City ||
+                     feature.properties.city ||
+                     feature.properties.County_Name ||
+                     feature.properties.county_name ||
+                     feature.properties.State ||
+                     feature.properties.state;
+        
+        // If we found a label from CSV, use it
+        if (displayName && displayName !== 'Unknown') {
+            return displayName;
         }
         
-        if (!displayName) {
-            if (geoLevel === 'zip') {
-                const zipCode = feature.properties.ZCTA5CE10 || 
-                               feature.properties.ZCTA5CE20 || 
-                               feature.properties.GEOID10?.substring(2) ||
-                               feature.properties.GEOID20?.substring(2) ||
-                               feature.properties.ZIP || 
-                               feature.properties.GEOID || 
-                               feature.properties.ZCTA || 
-                               feature.properties.ZCTA5 || 
-                               feature.properties.ZIPCODE || 
-                               'Unknown';
-                displayName = `ZIP ${zipCode}`;
+        // Otherwise fall back to geographic identifiers
+        if (geoLevel === 'zip') {
+            const zipCode = feature.properties.ZIP ||
+                           feature.properties.ZCTA5CE10 || 
+                           feature.properties.ZCTA5CE20 || 
+                           feature.properties.GEOID10?.substring(2) ||
+                           feature.properties.GEOID20?.substring(2) ||
+                           feature.properties.GEOID || 
+                           feature.properties.ZCTA || 
+                           feature.properties.ZCTA5 || 
+                           feature.properties.ZIPCODE || 
+                           'Unknown';
+            displayName = `ZIP ${zipCode}`;
             } else if (geoLevel === 'county') {
                 displayName = feature.properties.NAME || feature.properties.NAMELSAD || feature.properties.name || 'Unknown County';
             } else if (geoLevel === 'place') {
