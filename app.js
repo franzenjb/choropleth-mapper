@@ -341,7 +341,7 @@ class ChoroplethMapper {
         
         // Since we now have a complete US ZIP codes dataset, 
         // we can fetch all ZIP codes at once and filter later
-        await this.fetchZipCodes();
+        await this.fetchZipCodes(null);
         
         if (!this.geoData || !this.geoData.features || this.geoData.features.length === 0) {
             throw new Error('Unable to fetch US ZIP code boundaries from GitHub source');
@@ -380,34 +380,25 @@ class ChoroplethMapper {
     }
 
     async fetchSingleStateData(geoLevel, stateFilter) {
-        // Special handling for ZIP codes
+        console.log(`Fetching ${geoLevel} data${stateFilter ? ' for ' + stateFilter : ''}...`);
+        
         if (geoLevel === 'zip') {
             await this.fetchZipCodes(stateFilter);
             return;
         }
         
-        const tigerUrl = this.buildTigerUrl(geoLevel, stateFilter);
-        console.log(`Fetching from TIGER: ${tigerUrl}`);
-        
-        try {
-            const response = await fetch(tigerUrl);
-            if (!response.ok) {
-                throw new Error(`TIGER API returned ${response.status}: ${response.statusText}`);
-            }
-            
-            const responseText = await response.text();
-            this.geoData = JSON.parse(responseText);
-            
-            if (!this.geoData || !this.geoData.features || this.geoData.features.length === 0) {
-                throw new Error('No geographic features returned from TIGER service');
-            }
-            
-            console.log(`Loaded ${this.geoData.features.length} ${geoLevel} features from TIGER`);
-            
-        } catch (error) {
-            console.error('TIGER API error:', error);
-            throw new Error(`Failed to fetch geographic boundaries from Census TIGER service: ${error.message}`);
+        if (geoLevel === 'county') {
+            await this.fetchCounties(stateFilter);
+            return;
         }
+        
+        if (geoLevel === 'state') {
+            await this.fetchStates();
+            return;
+        }
+        
+        // For other geography types, show error
+        throw new Error(`Geography level '${geoLevel}' is not yet implemented. Currently supported: ZIP, County, State`);
     }
     
     async fetchZipCodes(stateFilter) {
@@ -427,6 +418,17 @@ class ChoroplethMapper {
             this.geoData = await response.json();
             console.log(`Loaded ${this.geoData.features?.length || 0} ZIP codes from GitHub`);
             
+            // Ensure properties have the expected names
+            this.geoData.features = this.geoData.features.map(feature => {
+                if (!feature.properties.ZCTA5 && feature.properties.ZCTA5CE10) {
+                    feature.properties.ZCTA5 = feature.properties.ZCTA5CE10;
+                }
+                if (!feature.properties.BASENAME) {
+                    feature.properties.BASENAME = feature.properties.ZCTA5 || feature.properties.ZCTA5CE10 || '';
+                }
+                return feature;
+            });
+            
             // Apply state filtering if needed
             if (stateFilter) {
                 this.filterZipCodesByState(stateFilter);
@@ -437,39 +439,91 @@ class ChoroplethMapper {
             throw new Error(`Failed to fetch ZIP code boundaries: ${error.message}`);
         }
     }
-
-    buildTigerUrl(geoLevel, stateFilter) {
-        // ZIP codes are handled by fetchZipCodes() method directly
-        if (geoLevel === 'zip') {
-            throw new Error('ZIP codes should be handled by fetchZipCodes() method');
+    
+    async fetchCounties(stateFilter) {
+        console.log(`Fetching counties${stateFilter ? ' for ' + stateFilter : ''}...`);
+        
+        try {
+            // Use reliable GitHub-hosted US Counties GeoJSON
+            const url = 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json';
+            console.log('Fetching counties from GitHub:', url);
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch counties: ${response.status} ${response.statusText}`);
+            }
+            
+            this.geoData = await response.json();
+            console.log(`Loaded ${this.geoData.features?.length || 0} counties from GitHub`);
+            
+            // Normalize property names for consistency
+            this.geoData.features = this.geoData.features.map(feature => {
+                // Ensure GEOID exists for matching
+                if (!feature.properties.GEOID && feature.properties.id) {
+                    feature.properties.GEOID = feature.properties.id;
+                }
+                // Add BASENAME for consistent matching
+                feature.properties.BASENAME = feature.properties.GEOID || '';
+                // Add NAME for display
+                if (!feature.properties.NAME && feature.properties.GEO_ID) {
+                    // Extract county name if stored differently
+                    feature.properties.NAME = feature.properties.GEO_ID;
+                }
+                return feature;
+            });
+            
+            // Apply state filtering if needed
+            if (stateFilter) {
+                const stateFips = this.getStateFips(stateFilter);
+                if (stateFips) {
+                    const originalCount = this.geoData.features.length;
+                    this.geoData.features = this.geoData.features.filter(f => {
+                        const geoid = f.properties.GEOID || f.properties.id || '';
+                        return geoid.startsWith(stateFips);
+                    });
+                    console.log(`Filtered ${originalCount} to ${this.geoData.features.length} counties for ${stateFilter}`);
+                }
+            }
+            
+        } catch (error) {
+            console.error('County fetch error:', error);
+            throw new Error(`Failed to fetch county boundaries: ${error.message}`);
         }
-        
-        const tigerBase = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb';
-        
-        const tigerEndpoints = {
-            'county': '/State_County/MapServer/1',
-            'subcounty': '/Places_CouSub_ConCity_SubMCD/MapServer/1',
-            'tract': '/Tracts_Blocks/MapServer/0',
-            'place': '/Places_CouSub_ConCity_SubMCD/MapServer/0',
-            'state': '/State_County/MapServer/0'
-        };
-        
-        let where = '1=1';
-        if (stateFilter && geoLevel !== 'state') {
-            const stateFips = this.getStateFips(stateFilter);
-            where = `STATE = '${stateFips}'`;
-        }
-        
-        const params = new URLSearchParams({
-            where: where,
-            outFields: '*',
-            f: 'geojson',
-            outSR: '4326',
-            returnGeometry: 'true'
-        });
-        
-        return `${tigerBase}${tigerEndpoints[geoLevel]}/query?${params}`;
     }
+    
+    async fetchStates() {
+        console.log('Fetching US states...');
+        
+        try {
+            // Use reliable GitHub-hosted US States GeoJSON
+            const url = 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json';
+            console.log('Fetching states from GitHub:', url);
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch states: ${response.status} ${response.statusText}`);
+            }
+            
+            this.geoData = await response.json();
+            console.log(`Loaded ${this.geoData.features?.length || 0} states from GitHub`);
+            
+            // Normalize property names for consistency
+            this.geoData.features = this.geoData.features.map(feature => {
+                // Add BASENAME for consistent matching
+                feature.properties.BASENAME = feature.properties.name || feature.properties.NAME || '';
+                // Add state abbreviation if available
+                if (!feature.properties.STUSPS && feature.properties.id) {
+                    feature.properties.STUSPS = feature.properties.id;
+                }
+                return feature;
+            });
+            
+        } catch (error) {
+            console.error('State fetch error:', error);
+            throw new Error(`Failed to fetch state boundaries: ${error.message}`);
+        }
+    }
+
 
     filterZipCodesByState(stateFilter) {
         const zipRanges = this.getZipRangesForState(stateFilter);
