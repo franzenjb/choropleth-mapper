@@ -1153,10 +1153,25 @@ class ChoroplethMapper {
                                 ZCTA5: feature.properties.ZCTA5
                             });
                         }
-                        const zipCode = feature.properties.ZCTA5CE20 || feature.properties.ZCTA5CE10 || 
-                                       feature.properties.ZIP || feature.properties.GEOID || 
-                                       feature.properties.ZCTA || feature.properties.ZCTA5 || 
-                                       feature.properties.ZIPCODE || 'Unknown';
+                        // Try to get ZIP from various possible field names
+                        const zipCode = feature.properties.ZCTA5CE20 || 
+                                       feature.properties.ZCTA5CE10 || 
+                                       feature.properties.GEOID10?.substring(2) || // Florida has GEOID10 like "1232606"
+                                       feature.properties.GEOID20?.substring(2) ||
+                                       feature.properties.ZIP || 
+                                       feature.properties.GEOID || 
+                                       feature.properties.ZCTA || 
+                                       feature.properties.ZCTA5 || 
+                                       feature.properties.ZIPCODE || 
+                                       'Unknown';
+                        
+                        // Debug if still unknown
+                        if (zipCode === 'Unknown') {
+                            console.log('ZIP popup debug - available fields:', Object.keys(feature.properties));
+                            console.log('ZIP popup debug - ZCTA5CE10:', feature.properties.ZCTA5CE10);
+                            console.log('ZIP popup debug - GEOID10:', feature.properties.GEOID10);
+                        }
+                        
                         displayName = `ZIP ${zipCode}`;
                     } else if (geoLevel === 'county') {
                         // For counties, show county name
