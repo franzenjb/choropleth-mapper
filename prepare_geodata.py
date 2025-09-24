@@ -109,11 +109,13 @@ def main():
     # 2. US Counties  
     print("\n2. US COUNTIES")
     counties_url = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
+    # Note: This dataset already has 'id' property with 5-digit FIPS
     download_and_save(counties_url, "us_counties.json", {
         'GEOID': ['id', 'GEOID'],
         'NAME': ['NAME'],
         'STATE': ['STATE'],
-        'COUNTY': ['COUNTY']
+        'COUNTY': ['COUNTY'],
+        'FIPS': ['id']  # Ensure FIPS is set from id
     })
     
     # 3. ZIP Codes
