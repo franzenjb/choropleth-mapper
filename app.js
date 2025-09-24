@@ -950,6 +950,19 @@ class ChoroplethMapper {
                         choropleth_value: parseFloat(csvRecord[dataColumn]) || 0
                     }
                 };
+                
+                // Debug: verify ZIP fields are preserved
+                if (geoLevel === 'zip' && index < 3) {
+                    console.log(`Merged ZIP feature ${index}:`, {
+                        original_ZCTA5CE10: feature.properties.ZCTA5CE10,
+                        original_GEOID10: feature.properties.GEOID10,
+                        merged_ZCTA5CE10: mergedFeature.properties.ZCTA5CE10,
+                        merged_GEOID10: mergedFeature.properties.GEOID10,
+                        Display_label: mergedFeature.properties.Display_label,
+                        choropleth_value: mergedFeature.properties.choropleth_value
+                    });
+                }
+                
                 this.mergedData.features.push(mergedFeature);
                 matchCount++;
             } else {
