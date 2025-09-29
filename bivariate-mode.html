@@ -314,6 +314,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
     <script>
         // Global variables
         let map;
@@ -493,15 +494,115 @@
             return numerator / Math.sqrt(xDenom * yDenom);
         }
         
-        function generateBivariateMap() {
-            // This would integrate with your existing boundary data
-            // For now, showing the setup structure
-            
+        async function generateBivariateMap() {
             document.getElementById('legendContainer').style.display = 'block';
             createBivariateLegend();
             
-            // Would load actual boundaries and apply bivariate colors
-            console.log('Generating bivariate map with current data...');
+            // Clear existing layers
+            if (currentLayer) {
+                map.removeLayer(currentLayer);
+            }
+            
+            try {
+                // Detect geography type from data
+                const hasCounty = csvData[0].hasOwnProperty('County');
+                const hasFIPS = csvData[0].hasOwnProperty('FIPS_Code') || csvData[0].hasOwnProperty('FIPS');
+                
+                let geoUrl;
+                if (hasCounty && (csvData[0].County.includes('County') || hasFIPS)) {
+                    // Load county boundaries - using Georgia counties
+                    console.log('Loading Georgia county boundaries...');
+                    geoUrl = 'https://raw.githubusercontent.com/deldersveld/topojson/master/countries/us-states/GA-13-georgia-counties.json';
+                } else {
+                    console.log('Unable to determine geography type');
+                    return;
+                }
+                
+                // Fetch boundaries
+                const response = await fetch(geoUrl);
+                const topoData = await response.json();
+                
+                // Convert TopoJSON to GeoJSON if needed
+                let geoJson;
+                if (topoData.type === 'Topology') {
+                    // It's TopoJSON, need to convert
+                    const objectName = Object.keys(topoData.objects)[0];
+                    geoJson = topojson.feature(topoData, topoData.objects[objectName]);
+                } else {
+                    geoJson = topoData;
+                }
+                
+                // Get variable values for color mapping
+                const xVar = document.getElementById('xVariable').value;
+                const yVar = document.getElementById('yVariable').value;
+                
+                const xValues = csvData.map(row => parseFloat(row[xVar])).filter(v => !isNaN(v));
+                const yValues = csvData.map(row => parseFloat(row[yVar])).filter(v => !isNaN(v));
+                
+                const xMin = Math.min(...xValues);
+                const xMax = Math.max(...xValues);
+                const yMin = Math.min(...yValues);
+                const yMax = Math.max(...yValues);
+                
+                // Create lookup for data by FIPS
+                const dataByFips = {};
+                csvData.forEach(row => {
+                    const fips = row.FIPS_Code || row.FIPS || row.geoid;
+                    if (fips) {
+                        dataByFips[String(fips).padStart(5, '0')] = row;
+                    }
+                });
+                
+                // Create Leaflet layer with bivariate colors
+                currentLayer = L.geoJSON(geoJson, {
+                    style: function(feature) {
+                        const fips = feature.properties.GEOID || feature.properties.FIPS || feature.id;
+                        const paddedFips = String(fips).padStart(5, '0');
+                        const data = dataByFips[paddedFips] || dataByFips[fips];
+                        
+                        let fillColor = '#e0e0e0';
+                        if (data) {
+                            const xVal = parseFloat(data[xVar]);
+                            const yVal = parseFloat(data[yVar]);
+                            
+                            if (!isNaN(xVal) && !isNaN(yVal)) {
+                                const xNorm = (xVal - xMin) / (xMax - xMin);
+                                const yNorm = (yVal - yMin) / (yMax - yMin);
+                                fillColor = getBivariateColor(xNorm, yNorm);
+                            }
+                        }
+                        
+                        return {
+                            fillColor: fillColor,
+                            weight: 1,
+                            opacity: 1,
+                            color: 'white',
+                            fillOpacity: 0.8
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const fips = feature.properties.GEOID || feature.properties.FIPS || feature.id;
+                        const paddedFips = String(fips).padStart(5, '0');
+                        const data = dataByFips[paddedFips] || dataByFips[fips];
+                        
+                        if (data) {
+                            const popupContent = `
+                                <strong>${data.County || feature.properties.NAME || 'Unknown'}</strong><br>
+                                ${xVar}: ${data[xVar]}<br>
+                                ${yVar}: ${data[yVar]}
+                            `;
+                            layer.bindPopup(popupContent);
+                        }
+                    }
+                }).addTo(map);
+                
+                // Fit map to boundaries
+                map.fitBounds(currentLayer.getBounds());
+                
+            } catch (error) {
+                console.error('Error loading boundaries:', error);
+                alert('Error loading map boundaries. Please check your data.');
+            }
             
             // Update quadrant analysis
             analyzeQuadrants();

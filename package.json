@@ -1,0 +1,23 @@
+{
+  "name": "choropleth-mapper",
+  "version": "1.0.0",
+  "description": "## 🎯 Problem Solved - Save Time & Money!",
+  "main": "app-original.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/franzenjb/choropleth-mapper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/franzenjb/choropleth-mapper/issues"
+  },
+  "homepage": "https://github.com/franzenjb/choropleth-mapper#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.55.1"
+  }
+}
