@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bivariate Choropleth Analysis - Alice Tool Enhancement</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Bivariate-specific styles */
+        .mode-toggle {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .mode-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .mode-btn.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .bivariate-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .bivariate-legend-container {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .bivariate-legend {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            border: 2px solid #333;
+        }
+        
+        .legend-labels {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        .variable-selector {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .variable-selector label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        
+        .variable-selector select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .variable-info {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+        
+        .correlation-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .correlation-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .export-section {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .export-btn {
+            display: block;
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        
+        .quadrant-analysis {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .quadrant {
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        
+        .quadrant-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .quadrant.high-high {
+            background: rgba(90, 90, 139, 0.1);
+            border: 1px solid #5a5a8b;
+        }
+        
+        .quadrant.high-low {
+            background: rgba(200, 184, 214, 0.1);
+            border: 1px solid #c8b8d6;
+        }
+        
+        .quadrant.low-high {
+            background: rgba(115, 174, 128, 0.1);
+            border: 1px solid #73ae80;
+        }
+        
+        .quadrant.low-low {
+            background: rgba(232, 232, 232, 0.5);
+            border: 1px solid #e8e8e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="container">
+            <header class="header">
+                <h1>🗺️ Alice Choropleth Tool - Bivariate Analysis Mode</h1>
+                <p class="subtitle">Visualize relationships between two variables simultaneously</p>
+            </header>
+
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <strong>Visualization Mode:</strong>
+                <button class="mode-btn" onclick="window.location.href='index.html'">
+                    Univariate (Single Variable)
+                </button>
+                <button class="mode-btn active">
+                    Bivariate (Two Variables)
+                </button>
+                <button class="mode-btn" onclick="window.location.href='#temporal'">
+                    Temporal (Time Series)
+                </button>
+            </div>
+
+            <div class="content-grid">
+                <!-- Controls Panel -->
+                <div class="controls-panel">
+                    <!-- File Upload -->
+                    <div class="upload-section">
+                        <h2>📁 Data Upload</h2>
+                        <div class="file-drop-zone" id="dropZone">
+                            <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                            <div class="drop-zone-content">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p>Drop your CSV file here or click to browse</p>
+                                <button class="btn btn-primary" onclick="document.getElementById('csvFile').click()">
+                                    Choose File
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Variable Selection -->
+                    <div class="variable-selector" id="variableSection" style="display: none;">
+                        <h2>📊 Variable Selection</h2>
+                        
+                        <div class="bivariate-controls">
+                            <div>
+                                <label for="xVariable">X-Axis Variable:</label>
+                                <select id="xVariable" onchange="updateAnalysis()"></select>
+                                <div class="variable-info" id="xInfo"></div>
+                            </div>
+                            
+                            <div>
+                                <label for="yVariable">Y-Axis Variable:</label>
+                                <select id="yVariable" onchange="updateAnalysis()"></select>
+                                <div class="variable-info" id="yInfo"></div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="generateBivariateMap()">
+                            Generate Bivariate Map
+                        </button>
+                    </div>
+
+                    <!-- Correlation Display -->
+                    <div class="correlation-display" id="correlationSection" style="display: none;">
+                        <div>Correlation Coefficient</div>
+                        <div class="correlation-value" id="correlationValue">-</div>
+                        <div id="correlationInterpretation"></div>
+                    </div>
+
+                    <!-- Quadrant Analysis -->
+                    <div id="quadrantSection" style="display: none;">
+                        <h3>Quadrant Analysis</h3>
+                        <div class="quadrant-analysis">
+                            <div class="quadrant high-high">
+                                <div class="quadrant-title">High-High</div>
+                                <div id="highHighCounties">-</div>
+                            </div>
+                            <div class="quadrant high-low">
+                                <div class="quadrant-title">High-Low</div>
+                                <div id="highLowCounties">-</div>
+                            </div>
+                            <div class="quadrant low-high">
+                                <div class="quadrant-title">Low-High</div>
+                                <div id="lowHighCounties">-</div>
+                            </div>
+                            <div class="quadrant low-low">
+                                <div class="quadrant-title">Low-Low</div>
+                                <div id="lowLowCounties">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Options -->
+                    <div class="export-section" id="exportSection" style="display: none;">
+                        <h3>📤 Export Options</h3>
+                        <button class="export-btn" onclick="exportForUnivariate()">
+                            Export for Single Variable Analysis
+                        </button>
+                        <button class="export-btn" onclick="exportBivariateData()">
+                            Export Bivariate Scores
+                        </button>
+                        <button class="export-btn" onclick="exportAnalysisReport()">
+                            Download Analysis Report
+                        </button>
+                        <button class="export-btn" onclick="exportToGeoJSON()">
+                            Export to GeoJSON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Map Container -->
+                <div class="map-panel">
+                    <div id="map" style="height: 600px; position: relative;"></div>
+                    
+                    <!-- Bivariate Legend -->
+                    <div class="bivariate-legend-container" id="legendContainer" style="display: none;">
+                        <h4 style="margin-bottom: 0.5rem;">Legend</h4>
+                        <div class="bivariate-legend">
+                            <svg id="legendSvg" viewBox="0 0 100 100" style="width: 100%; height: 100%;"></svg>
+                        </div>
+                        <div class="legend-labels">
+                            <div style="text-align: center; margin-top: 0.5rem;">
+                                <span id="xLegendLabel">→</span>
+                            </div>
+                            <div style="position: absolute; left: -30px; top: 60px; transform: rotate(-90deg);">
+                                <span id="yLegendLabel">↑</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
+    <script>
+        // Global variables
+        let map;
+        let csvData = [];
+        let currentLayer = null;
+        let boundaries = null;
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([28.5, -81.5], 7); // Florida center
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+        
+        // Bivariate color calculation
+        function getBivariateColor(xValue, yValue) {
+            const x = Math.max(0, Math.min(1, xValue));
+            const y = Math.max(0, Math.min(1, yValue));
+            
+            const colors = {
+                lowlow: [232, 232, 232],
+                lowhigh: [115, 174, 128],
+                highlow: [200, 184, 214],
+                highhigh: [90, 90, 139]
+            };
+            
+            const bottom = interpolate(colors.lowlow, colors.highlow, x);
+            const top = interpolate(colors.lowhigh, colors.highhigh, x);
+            const final = interpolate(bottom, top, y);
+            
+            return `rgb(${Math.round(final[0])}, ${Math.round(final[1])}, ${Math.round(final[2])})`;
+        }
+        
+        function interpolate(color1, color2, t) {
+            return [
+                color1[0] * (1 - t) + color2[0] * t,
+                color1[1] * (1 - t) + color2[1] * t,
+                color1[2] * (1 - t) + color2[2] * t
+            ];
+        }
+        
+        // Create bivariate legend
+        function createBivariateLegend() {
+            const svg = document.getElementById('legendSvg');
+            svg.innerHTML = '';
+            
+            const gridSize = 15;
+            const cellSize = 100 / gridSize;
+            
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', x * cellSize);
+                    rect.setAttribute('y', (gridSize - y - 1) * cellSize);
+                    rect.setAttribute('width', cellSize);
+                    rect.setAttribute('height', cellSize);
+                    rect.setAttribute('fill', getBivariateColor(x / (gridSize - 1), y / (gridSize - 1)));
+                    svg.appendChild(rect);
+                }
+            }
+        }
+        
+        // File handling
+        document.getElementById('csvFile').addEventListener('change', handleFileSelect);
+        document.getElementById('dropZone').addEventListener('drop', handleFileDrop);
+        document.getElementById('dropZone').addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        });
+        document.getElementById('dropZone').addEventListener('dragleave', (e) => {
+            e.currentTarget.classList.remove('dragover');
+        });
+        
+        function handleFileDrop(e) {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+        
+        function processFile(file) {
+            Papa.parse(file, {
+                header: true,
+                complete: function(results) {
+                    csvData = results.data.filter(row => Object.values(row).some(val => val));
+                    analyzeData();
+                }
+            });
+        }
+        
+        function analyzeData() {
+            if (!csvData.length) return;
+            
+            const headers = Object.keys(csvData[0]);
+            const numericColumns = headers.filter(col => {
+                return csvData.every(row => !isNaN(parseFloat(row[col])) || row[col] === '');
+            });
+            
+            // Populate variable selectors
+            const xSelect = document.getElementById('xVariable');
+            const ySelect = document.getElementById('yVariable');
+            
+            xSelect.innerHTML = '';
+            ySelect.innerHTML = '';
+            
+            numericColumns.forEach((col, index) => {
+                if (!['GEOID', 'FIPS', 'ZIP'].includes(col.toUpperCase())) {
+                    xSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                    ySelect.innerHTML += `<option value="${col}">${col}</option>`;
+                }
+            });
+            
+            if (numericColumns.length > 1) {
+                ySelect.selectedIndex = 1;
+            }
+            
+            document.getElementById('variableSection').style.display = 'block';
+            document.getElementById('exportSection').style.display = 'block';
+            
+            updateAnalysis();
+        }
+        
+        function updateAnalysis() {
+            const xVar = document.getElementById('xVariable').value;
+            const yVar = document.getElementById('yVariable').value;
+            
+            if (!xVar || !yVar) return;
+            
+            const xValues = csvData.map(row => parseFloat(row[xVar])).filter(v => !isNaN(v));
+            const yValues = csvData.map(row => parseFloat(row[yVar])).filter(v => !isNaN(v));
+            
+            // Update info displays
+            document.getElementById('xInfo').innerHTML = `
+                Range: ${Math.min(...xValues).toFixed(0)} - ${Math.max(...xValues).toFixed(0)}
+            `;
+            document.getElementById('yInfo').innerHTML = `
+                Range: ${Math.min(...yValues).toFixed(0)} - ${Math.max(...yValues).toFixed(0)}
+            `;
+            
+            // Calculate correlation
+            const correlation = calculateCorrelation(xValues, yValues);
+            document.getElementById('correlationValue').textContent = correlation.toFixed(3);
+            document.getElementById('correlationInterpretation').textContent = 
+                Math.abs(correlation) > 0.7 ? 'Strong relationship' :
+                Math.abs(correlation) > 0.4 ? 'Moderate relationship' : 'Weak relationship';
+            document.getElementById('correlationSection').style.display = 'block';
+            
+            // Update legend labels
+            document.getElementById('xLegendLabel').textContent = xVar + ' →';
+            document.getElementById('yLegendLabel').textContent = yVar + ' ↑';
+        }
+        
+        function calculateCorrelation(x, y) {
+            const n = Math.min(x.length, y.length);
+            const xMean = x.reduce((a, b) => a + b, 0) / n;
+            const yMean = y.reduce((a, b) => a + b, 0) / n;
+            
+            let numerator = 0, xDenom = 0, yDenom = 0;
+            for (let i = 0; i < n; i++) {
+                const xDiff = x[i] - xMean;
+                const yDiff = y[i] - yMean;
+                numerator += xDiff * yDiff;
+                xDenom += xDiff * xDiff;
+                yDenom += yDiff * yDiff;
+            }
+            
+            return numerator / Math.sqrt(xDenom * yDenom);
+        }
+        
+        function generateBivariateMap() {
+            // This would integrate with your existing boundary data
+            // For now, showing the setup structure
+            
+            document.getElementById('legendContainer').style.display = 'block';
+            createBivariateLegend();
+            
+            // Would load actual boundaries and apply bivariate colors
+            console.log('Generating bivariate map with current data...');
+            
+            // Update quadrant analysis
+            analyzeQuadrants();
+        }
+        
+        function analyzeQuadrants() {
+            const xVar = document.getElementById('xVariable').value;
+            const yVar = document.getElementById('yVariable').value;
+            
+            const xValues = csvData.map(row => parseFloat(row[xVar])).filter(v => !isNaN(v));
+            const yValues = csvData.map(row => parseFloat(row[yVar])).filter(v => !isNaN(v));
+            
+            const xMedian = median(xValues);
+            const yMedian = median(yValues);
+            
+            const quadrants = {
+                highHigh: [],
+                highLow: [],
+                lowHigh: [],
+                lowLow: []
+            };
+            
+            csvData.forEach(row => {
+                const x = parseFloat(row[xVar]);
+                const y = parseFloat(row[yVar]);
+                const name = row.County || row.Name || row.GEOID || 'Unknown';
+                
+                if (!isNaN(x) && !isNaN(y)) {
+                    if (x > xMedian && y > yMedian) quadrants.highHigh.push(name);
+                    else if (x > xMedian && y < yMedian) quadrants.highLow.push(name);
+                    else if (x < xMedian && y > yMedian) quadrants.lowHigh.push(name);
+                    else quadrants.lowLow.push(name);
+                }
+            });
+            
+            document.getElementById('highHighCounties').textContent = 
+                quadrants.highHigh.slice(0, 3).join(', ') + (quadrants.highHigh.length > 3 ? '...' : '');
+            document.getElementById('highLowCounties').textContent = 
+                quadrants.highLow.slice(0, 3).join(', ') + (quadrants.highLow.length > 3 ? '...' : '');
+            document.getElementById('lowHighCounties').textContent = 
+                quadrants.lowHigh.slice(0, 3).join(', ') + (quadrants.lowHigh.length > 3 ? '...' : '');
+            document.getElementById('lowLowCounties').textContent = 
+                quadrants.lowLow.slice(0, 3).join(', ') + (quadrants.lowLow.length > 3 ? '...' : '');
+            
+            document.getElementById('quadrantSection').style.display = 'block';
+        }
+        
+        function median(values) {
+            const sorted = [...values].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+        
+        // Export functions
+        function exportForUnivariate() {
+            // Export data formatted for single variable analysis
+            const xVar = document.getElementById('xVariable').value;
+            const yVar = document.getElementById('yVariable').value;
+            
+            let output = 'GEOID,Name,' + xVar + ',' + yVar + ',BivariateCombined\n';
+            csvData.forEach(row => {
+                const combined = (parseFloat(row[xVar]) + parseFloat(row[yVar])) / 2;
+                output += `${row.GEOID || ''},${row.County || row.Name || ''},${row[xVar]},${row[yVar]},${combined}\n`;
+            });
+            
+            downloadFile(output, 'univariate_ready.csv');
+        }
+        
+        function exportBivariateData() {
+            // Export with bivariate scores
+            console.log('Exporting bivariate data...');
+        }
+        
+        function exportAnalysisReport() {
+            // Create detailed analysis report
+            console.log('Generating analysis report...');
+        }
+        
+        function exportToGeoJSON() {
+            // Export to GeoJSON format
+            console.log('Exporting to GeoJSON...');
+        }
+        
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            createBivariateLegend();
+        });
+    </script>
+</body>
+</html>
