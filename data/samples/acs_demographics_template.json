@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "source": "American Community Survey 5-Year Estimates",
+    "year": "2022",
+    "geography": "Census Tract",
+    "variables": [
+      "B01003_001E - Total Population",
+      "B19013_001E - Median Household Income",
+      "B25003_002E - Owner Occupied Housing",
+      "B08303_001E - Total Commuters",
+      "B15003_022E - Bachelor's Degree or Higher"
+    ]
+  },
+  "note": "This is a template structure. Real data would come from Census API integration."
+}

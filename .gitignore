@@ -1,0 +1,45 @@
+# Large Data Files (download with scripts)
+data/*.json
+data/*.zip
+*.db
+gis_metadata.db
+
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp_*/
+.cache/
+
+# Logs
+*.log
+
+# Local environment files
+.env
+.env.local
+.env.*.local
