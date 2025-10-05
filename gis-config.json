@@ -1,0 +1,294 @@
+{
+  "name": "Unified GIS Database Configuration",
+  "version": "1.0.0",
+  "description": "Shared configuration for Choropleth Mapper and Universal Choropleth Tool",
+  
+  "database": {
+    "local_path": "/Users/jefffranzen/choropleth-mapper/data/",
+    "api_server": "http://localhost:5000",
+    "total_size": "3.2GB",
+    "last_updated": "2025-01-09"
+  },
+  
+  "datasets": {
+    "counties": {
+      "id": "counties",
+      "name": "US Counties",
+      "file": "us_counties.json",
+      "url": "/api/geography/counties",
+      "records": 3221,
+      "size_mb": 2.95,
+      "geography_level": "County",
+      "coverage": "Complete National",
+      "crs": "EPSG:4326",
+      "join_fields": {
+        "primary": ["FIPS", "GEOID"],
+        "secondary": ["NAME", "COUNTY"],
+        "patterns": ["^(fips|geoid|county_fips|cnty_fips|fips_code)$", "^(county|county_name|cnty|cnty_name)$"]
+      },
+      "sample_values": ["12086", "23005", "48201"],
+      "description": "Complete US county boundaries with FIPS codes",
+      "source": "US Census TIGER/Line 2024"
+    },
+    
+    "zips": {
+      "id": "zips",
+      "name": "ZIP Code Areas",
+      "file": "us_zips_full.json",
+      "url": "/api/geography/zips",
+      "records": 33092,
+      "size_mb": 27.03,
+      "geography_level": "ZIP Code",
+      "coverage": "Complete National",
+      "crs": "EPSG:4326",
+      "join_fields": {
+        "primary": ["ZIP", "ZCTA5CE10"],
+        "secondary": ["GEOID", "NAME"],
+        "patterns": ["^(zip|zipcode|zip_code|postal|zcta|zcta5)$"]
+      },
+      "sample_values": ["32003", "04011", "90210"],
+      "description": "ZIP Code Tabulation Areas (ZCTA) boundaries",
+      "source": "US Census TIGER/Line 2024"
+    },
+    
+    "places": {
+      "id": "places",
+      "name": "Places and Cities",
+      "file": "us_places.json",
+      "url": "/api/geography/places",
+      "records": 30000,
+      "size_mb": 314.46,
+      "geography_level": "Place",
+      "coverage": "Sample (Alabama)",
+      "crs": "EPSG:4269",
+      "join_fields": {
+        "primary": ["GEOID"],
+        "secondary": ["NAME", "NAMELSAD"],
+        "patterns": ["^(place|city|place_name|city_name|municipality)$"]
+      },
+      "sample_values": ["1200950", "1214250", "1216475"],
+      "description": "Incorporated places and census designated places",
+      "source": "US Census TIGER/Line 2024"
+    },
+    
+    "tracts": {
+      "id": "tracts",
+      "name": "Census Tracts",
+      "file": "us_census_tracts.json",
+      "url": "/api/geography/tracts",
+      "records": 70000,
+      "size_mb": 696.49,
+      "geography_level": "Census Tract",
+      "coverage": "Sample (Alaska)",
+      "crs": "EPSG:4269",
+      "join_fields": {
+        "primary": ["GEOID"],
+        "secondary": ["TRACTCE", "NAME"],
+        "patterns": ["^(tract|tractce|census_tract|tract_id)$"]
+      },
+      "sample_values": ["12001020100", "23005010100"],
+      "description": "Census tract boundaries for demographic analysis",
+      "source": "US Census TIGER/Line 2024"
+    },
+    
+    "blockgroups": {
+      "id": "blockgroups",
+      "name": "Census Block Groups",
+      "file": "us_block_groups.json",
+      "url": "/api/geography/blockgroups",
+      "records": 220000,
+      "size_mb": 1779.64,
+      "geography_level": "Block Group",
+      "coverage": "Sample (Alabama)",
+      "crs": "EPSG:4269",
+      "join_fields": {
+        "primary": ["GEOID"],
+        "secondary": ["BLKGRPCE", "NAMELSAD"],
+        "patterns": ["^(blockgroup|blkgrp|block_group)$"]
+      },
+      "sample_values": ["120010201001", "230050101001"],
+      "description": "Census block group boundaries for fine-grain analysis",
+      "source": "US Census TIGER/Line 2024"
+    },
+    
+    "states": {
+      "id": "states",
+      "name": "US States",
+      "file": "us_states.json",
+      "url": "/api/geography/states",
+      "records": 52,
+      "size_mb": 0.09,
+      "geography_level": "State",
+      "coverage": "Complete National",
+      "crs": "EPSG:4326",
+      "join_fields": {
+        "primary": ["NAME"],
+        "secondary": ["id"],
+        "patterns": ["^(state|state_name|st|state_abbr)$"]
+      },
+      "sample_values": ["Florida", "Maine", "Texas"],
+      "description": "US states and territories",
+      "source": "US Census TIGER/Line 2024"
+    }
+  },
+  
+  "emergency_infrastructure": {
+    "fire_stations": {
+      "id": "fire_stations",
+      "name": "Fire Stations",
+      "file": "us_fire_stations.json",
+      "url": "/api/geography/fire_stations",
+      "records": 50000,
+      "size_mb": 15,
+      "type": "Point",
+      "coverage": "National",
+      "join_fields": {
+        "primary": ["NAME"],
+        "secondary": ["STATE", "TYPE"],
+        "patterns": ["^(fire_station|station_name)$"]
+      },
+      "description": "Fire station locations nationwide",
+      "source": "HIFLD (Homeland Infrastructure Foundation)"
+    },
+    
+    "flood_zones": {
+      "id": "flood_zones",
+      "name": "FEMA Flood Zones",
+      "file": "us_fema_flood_zones.json",
+      "url": "/api/geography/flood_zones",
+      "records": 1000000,
+      "size_mb": 500,
+      "type": "Polygon",
+      "coverage": "National",
+      "join_fields": {
+        "primary": ["ZONE"],
+        "secondary": ["STATE", "COUNTY"],
+        "patterns": ["^(flood_zone|fema_zone)$"]
+      },
+      "description": "FEMA flood risk zones",
+      "source": "FEMA National Flood Hazard Layer"
+    },
+    
+    "evacuation_routes": {
+      "id": "evacuation_routes",
+      "name": "Evacuation Routes",
+      "file": "us_evacuation_routes.json",
+      "url": "/api/geography/evacuation_routes",
+      "records": 5000,
+      "size_mb": 25,
+      "type": "LineString",
+      "coverage": "Regional",
+      "join_fields": {
+        "primary": ["ROUTE_NAME"],
+        "secondary": ["STATE", "TYPE"],
+        "patterns": ["^(evac_route|route_name)$"]
+      },
+      "description": "Emergency evacuation corridors",
+      "source": "State Emergency Management Agencies"
+    },
+    
+    "major_roads": {
+      "id": "major_roads",
+      "name": "Major Roads",
+      "file": "us_major_roads.json",
+      "url": "/api/geography/major_roads",
+      "records": 100000,
+      "size_mb": 95.35,
+      "type": "LineString",
+      "coverage": "Multi-regional",
+      "join_fields": {
+        "primary": ["FULLNAME"],
+        "secondary": ["RTTYP", "MTFCC"],
+        "patterns": ["^(road_name|route_name|highway)$"]
+      },
+      "description": "Major transportation networks",
+      "source": "US Census TIGER/Line 2024"
+    }
+  },
+  
+  "application_settings": {
+    "choropleth_mapper": {
+      "data_source": "local_files",
+      "api_fallback": true,
+      "cache_enabled": true,
+      "default_geography": "counties",
+      "theme": "red_cross"
+    },
+    
+    "universal_choropleth_tool": {
+      "data_source": "api_server",
+      "local_fallback": true,
+      "cache_enabled": true,
+      "default_geography": "counties",
+      "theme": "universal"
+    }
+  },
+  
+  "api_endpoints": {
+    "base_url": "http://localhost:5000",
+    "datasets": "/api/datasets",
+    "geography": "/api/geography/{type}",
+    "inventory": "/api/inventory",
+    "analyze_csv": "/api/analyze-csv",
+    "health_check": "/",
+    "data_files": "/data/{filename}"
+  },
+  
+  "color_schemes": {
+    "red_cross": {
+      "name": "Red Cross Brand",
+      "colors": ["#fff5f5", "#fed7d7", "#feb2b2", "#fc8181", "#e53e3e"],
+      "description": "Official American Red Cross colors"
+    },
+    "emergency": {
+      "name": "Emergency Response",
+      "colors": ["#fee5d9", "#fcae91", "#fb6a4a", "#de2d26", "#a50f15"],
+      "description": "Emergency management color scheme"
+    },
+    "water": {
+      "name": "Water Resources",
+      "colors": ["#eff3ff", "#bdd7e7", "#6baed6", "#3182bd", "#08519c"],
+      "description": "Water and flood-related mapping"
+    },
+    "health": {
+      "name": "Public Health",
+      "colors": ["#edf8e9", "#bae4b3", "#74c476", "#31a354", "#006d2c"],
+      "description": "Health and medical facility mapping"
+    },
+    "demographics": {
+      "name": "Demographics",
+      "colors": ["#f2f0f7", "#cbc9e2", "#9e9ac8", "#756bb1", "#54278f"],
+      "description": "Population and demographic analysis"
+    }
+  },
+  
+  "usage_examples": {
+    "load_counties": {
+      "javascript": "const db = new SharedGISDatabase(); await db.getGeography('counties');",
+      "api": "GET http://localhost:5000/api/geography/counties",
+      "description": "Load all US counties"
+    },
+    "filter_by_state": {
+      "javascript": "await db.getGeography('counties', {state: 'FL'});",
+      "api": "GET http://localhost:5000/api/geography/counties?state=FL",
+      "description": "Load counties filtered by state"
+    },
+    "analyze_csv": {
+      "api": "POST http://localhost:5000/api/analyze-csv",
+      "description": "Analyze CSV for geographic field detection"
+    }
+  },
+  
+  "startup_instructions": {
+    "quick_start": [
+      "1. Start API server: python3 gis-api-server.py",
+      "2. Open browser to http://localhost:5000",
+      "3. Both tools can now access the 3.2GB database!"
+    ],
+    "development": [
+      "1. Install Flask: pip install flask flask-cors pandas",
+      "2. Run server: python3 gis-api-server.py",
+      "3. Test endpoints at http://localhost:5000/api/datasets"
+    ]
+  }
+}
