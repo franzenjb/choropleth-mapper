@@ -98,10 +98,28 @@
             <!-- Professional Header with Value Proposition -->
             <header class="app-header">
                 <div class="header-brand">
-                    <div class="brand-logo">+</div>
+                    <div class="brand-logo">🗺️</div>
                     <div>
                         <h1 class="brand-title">Choropleth Mapper</h1>
                         <p class="brand-subtitle">Transform CSV Data into Professional Geographic Visualizations</p>
+                    </div>
+                </div>
+                
+                <!-- Theme & Settings Controls -->
+                <div class="header-controls">
+                    <button id="themeToggle" class="theme-toggle" title="Toggle Dark/Light Theme">
+                        <span class="theme-icon">🌓</span>
+                        <span class="theme-label">Theme</span>
+                    </button>
+                    <div class="basemap-control">
+                        <label for="basemapSelect" class="basemap-label">Base Map</label>
+                        <select id="basemapSelect" class="basemap-select">
+                            <option value="light" selected>Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="satellite">Satellite</option>
+                            <option value="streets">Streets</option>
+                            <option value="topographic">Topographic</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -203,12 +221,13 @@
                                     <div class="form-group">
                                         <label for="colorScheme" class="form-label">Color Scheme</label>
                                         <select id="colorScheme" class="form-select">
-                                            <option value="reds" selected>Red Gradient (ARC)</option>
-                                            <option value="blues">Blue Gradient</option>
-                                            <option value="greens">Green Gradient</option>
-                                            <option value="purples">Purple Gradient</option>
-                                            <option value="oranges">Orange Gradient</option>
-                                            <option value="diverging">Diverging (Red-Blue)</option>
+                                            <option value="redcross" selected>Red Cross Brand</option>
+                                            <option value="reds">Red Gradient (Emergency)</option>
+                                            <option value="blues">Blue Gradient (Water)</option>
+                                            <option value="greens">Green Gradient (Health)</option>
+                                            <option value="oranges">Orange Gradient (Resources)</option>
+                                            <option value="purples">Purple Gradient (Demographics)</option>
+                                            <option value="diverging">Diverging (Blue-Red)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -345,7 +364,8 @@
     <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/shpwrite@0.3.2/shpwrite.min.js"></script>
-    <script src="app.js?v=2.2"></script>
+    <script src="https://unpkg.com/chroma-js@2.4.2/chroma.min.js"></script>
+    <script src="app.js?v=2.3"></script>
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -390,6 +410,181 @@
             a.click();
             window.URL.revokeObjectURL(url);
         }
+
+        // Theme Management
+        class ThemeManager {
+            constructor() {
+                this.currentTheme = localStorage.getItem('choropleth-theme') || 'light';
+                this.init();
+            }
+
+            init() {
+                document.documentElement.setAttribute('data-theme', this.currentTheme);
+                this.updateToggleButton();
+                
+                // Theme toggle event listener
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    this.toggleTheme();
+                });
+            }
+
+            toggleTheme() {
+                this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', this.currentTheme);
+                localStorage.setItem('choropleth-theme', this.currentTheme);
+                this.updateToggleButton();
+                
+                // Notify app about theme change
+                if (window.choroplethApp && window.choroplethApp.onThemeChange) {
+                    window.choroplethApp.onThemeChange(this.currentTheme);
+                }
+            }
+
+            updateToggleButton() {
+                const button = document.getElementById('themeToggle');
+                const icon = button.querySelector('.theme-icon');
+                const label = button.querySelector('.theme-label');
+                
+                if (this.currentTheme === 'dark') {
+                    icon.textContent = '☀️';
+                    label.textContent = 'Light';
+                    button.setAttribute('title', 'Switch to Light Theme');
+                } else {
+                    icon.textContent = '🌙';
+                    label.textContent = 'Dark';
+                    button.setAttribute('title', 'Switch to Dark Theme');
+                }
+            }
+
+            getCurrentTheme() {
+                return this.currentTheme;
+            }
+        }
+
+        // Enhanced Basemap Manager
+        class BasemapManager {
+            constructor() {
+                this.basemaps = {
+                    light: {
+                        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        attribution: '© OpenStreetMap contributors'
+                    },
+                    dark: {
+                        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                        attribution: '© CARTO © OpenStreetMap contributors'
+                    },
+                    satellite: {
+                        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                        attribution: '© Esri © DigitalGlobe © GeoEye © Earthstar Geographics'
+                    },
+                    streets: {
+                        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+                        attribution: '© Esri'
+                    },
+                    topographic: {
+                        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+                        attribution: '© Esri'
+                    }
+                };
+                
+                this.currentBasemap = 'light';
+                this.init();
+            }
+
+            init() {
+                document.getElementById('basemapSelect').addEventListener('change', (e) => {
+                    this.changeBasemap(e.target.value);
+                });
+            }
+
+            changeBasemap(basemapId) {
+                this.currentBasemap = basemapId;
+                
+                // Notify app about basemap change
+                if (window.choroplethApp && window.choroplethApp.onBasemapChange) {
+                    window.choroplethApp.onBasemapChange(basemapId, this.basemaps[basemapId]);
+                }
+            }
+
+            getBasemap(id) {
+                return this.basemaps[id] || this.basemaps.light;
+            }
+
+            getCurrentBasemap() {
+                return this.getBasemap(this.currentBasemap);
+            }
+        }
+
+        // Enhanced Color Scheme Manager using Chroma.js
+        class ColorSchemeManager {
+            constructor() {
+                this.schemes = {
+                    reds: {
+                        name: 'Red Gradient (Emergency)',
+                        colors: ['#fee5d9', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15']
+                    },
+                    blues: {
+                        name: 'Blue Gradient (Water)',
+                        colors: ['#eff3ff', '#bdd7e7', '#6baed6', '#3182bd', '#08519c']
+                    },
+                    greens: {
+                        name: 'Green Gradient (Health)',
+                        colors: ['#edf8e9', '#bae4b3', '#74c476', '#31a354', '#006d2c']
+                    },
+                    oranges: {
+                        name: 'Orange Gradient (Resources)',
+                        colors: ['#feedde', '#fdbe85', '#fd8d3c', '#e6550d', '#a63603']
+                    },
+                    purples: {
+                        name: 'Purple Gradient (Demographics)',
+                        colors: ['#f2f0f7', '#cbc9e2', '#9e9ac8', '#756bb1', '#54278f']
+                    },
+                    redcross: {
+                        name: 'Red Cross Brand',
+                        colors: ['#fff5f5', '#fed7d7', '#feb2b2', '#fc8181', '#e53e3e']
+                    },
+                    diverging: {
+                        name: 'Diverging (Blue-Red)',
+                        colors: ['#2166ac', '#67a9cf', '#f7f7f7', '#ef8a62', '#b2182b']
+                    }
+                };
+            }
+
+            generateColorScale(scheme, numClasses = 5) {
+                const schemeData = this.schemes[scheme] || this.schemes.reds;
+                
+                if (window.chroma) {
+                    // Use chroma.js for professional color interpolation
+                    return chroma.scale(schemeData.colors)
+                        .mode('lab')
+                        .colors(numClasses);
+                } else {
+                    // Fallback to predefined colors
+                    return schemeData.colors.slice(0, numClasses);
+                }
+            }
+
+            getSchemeNames() {
+                return Object.entries(this.schemes).map(([key, value]) => ({
+                    id: key,
+                    name: value.name
+                }));
+            }
+        }
+
+        // Initialize managers when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            window.themeManager = new ThemeManager();
+            window.basemapManager = new BasemapManager();
+            window.colorSchemeManager = new ColorSchemeManager();
+            
+            // Make managers available globally for the main app
+            window.choroplethManagers = {
+                theme: window.themeManager,
+                basemap: window.basemapManager,
+                colorScheme: window.colorSchemeManager
+            };
+        });
     </script>
 </body>
 </html>
