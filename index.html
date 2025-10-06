@@ -6,6 +6,7 @@
     <title>Choropleth Mapper - Professional Data Visualization Tool</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dark-theme-fix.css">
 </head>
 <body>
     <div class="app-container">
@@ -142,16 +143,66 @@
                         </h2>
                     </div>
                     <div class="step-content">
-                        <div class="upload-area" id="uploadArea">
+                        <!-- File Upload using Label (Browser Security Compliant) -->
+                        <div style="text-align: center; margin: 20px 0;">
+                            <label for="csvInput" style="display: inline-block; background: #ED1B2E; color: white; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; border: none;">
+                                📁 CHOOSE CSV FILE
+                            </label>
+                            <p style="margin-top: 10px; color: #666; font-size: 14px;">Click the red button above to select your CSV file</p>
+                        </div>
+                        
+                        <!-- Drag and Drop Area -->
+                        <div class="upload-area" id="uploadArea" style="cursor: pointer;" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                             <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="17 8 12 3 7 8"></polyline>
                                 <line x1="12" y1="3" x2="12" y2="15"></line>
                             </svg>
-                            <p class="upload-text">Drop CSV file here or click to browse</p>
+                            <p class="upload-text">Drag and drop CSV file here</p>
                             <p class="upload-subtext">Supports any CSV with geographic identifiers</p>
                         </div>
-                        <input type="file" id="csvInput" accept=".csv" hidden>
+                        <input type="file" id="csvInput" accept=".csv" hidden onchange="handleFileSelect(this)">
+                        
+                        <script>
+                        function handleFileSelect(input) {
+                            if (input.files.length > 0) {
+                                console.log('File selected:', input.files[0].name);
+                                if (window.choroplethMapper && window.choroplethMapper.handleFile) {
+                                    window.choroplethMapper.handleFile(input.files[0]);
+                                } else {
+                                    alert('Please wait for the application to load completely, then try again.');
+                                }
+                            }
+                        }
+                        
+                        function handleDrop(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const files = e.dataTransfer.files;
+                            if (files.length > 0) {
+                                console.log('File dropped:', files[0].name);
+                                if (window.choroplethMapper && window.choroplethMapper.handleFile) {
+                                    window.choroplethMapper.handleFile(files[0]);
+                                } else {
+                                    alert('Please wait for the application to load completely, then try again.');
+                                }
+                            }
+                        }
+                        
+                        function handleDragOver(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            document.getElementById('uploadArea').style.borderColor = '#ED1B2E';
+                            document.getElementById('uploadArea').style.backgroundColor = '#fff5f5';
+                        }
+                        
+                        function handleDragLeave(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            document.getElementById('uploadArea').style.borderColor = '';
+                            document.getElementById('uploadArea').style.backgroundColor = '';
+                        }
+                        </script>
                         <div id="fileInfo" class="file-info hidden"></div>
                     </div>
                 </div>
@@ -365,6 +416,7 @@
     <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/shpwrite@0.3.2/shpwrite.min.js"></script>
     <script src="https://unpkg.com/chroma-js@2.4.2/chroma.min.js"></script>
+    <script src="database-config.js"></script>
     <script src="app.js?v=2.3"></script>
     <script>
         function toggleSidebar() {

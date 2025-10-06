@@ -924,10 +924,18 @@ body {
     background-color: var(--bg-primary);
 }
 
+.container {
+    background-color: var(--bg-primary);
+}
+
 .workflow-step {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.workflow-step h2 {
+    color: var(--text-primary);
 }
 
 .form-select, .form-control {
@@ -939,6 +947,67 @@ body {
 .form-select:focus, .form-control:focus {
     border-color: var(--arc-red);
     box-shadow: 0 0 0 0.2rem rgba(237, 27, 46, 0.25);
+}
+
+/* Fix all text elements for dark theme */
+[data-theme="dark"] .workflow-step,
+[data-theme="dark"] .upload-area,
+[data-theme="dark"] .upload-area p,
+[data-theme="dark"] .form-group label,
+[data-theme="dark"] .instructions-note,
+[data-theme="dark"] h1, 
+[data-theme="dark"] h2, 
+[data-theme="dark"] h3,
+[data-theme="dark"] p,
+[data-theme="dark"] strong {
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] .upload-area {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .upload-area:hover {
+    background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] select,
+[data-theme="dark"] input {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Complete dark theme coverage for all content areas */
+[data-theme="dark"] .container,
+[data-theme="dark"] .main-content,
+[data-theme="dark"] .step-content,
+[data-theme="dark"] .configuration-panel {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .workflow-step {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* Override any remaining white backgrounds */
+[data-theme="dark"] * {
+    background-color: inherit;
+    color: inherit;
+}
+
+[data-theme="dark"] .workflow-step * {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .upload-area * {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 /* Enhanced Header Controls */

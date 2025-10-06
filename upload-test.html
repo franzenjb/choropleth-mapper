@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Test</title>
+    <style>
+        .test-upload {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin: 20px;
+            background: #f9f9f9;
+        }
+        .test-upload:hover {
+            border-color: #ED1B2E;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Upload Test</h1>
+    
+    <div class="test-upload" onclick="openFileDialog()">
+        <p>CLICK HERE TO TEST FILE BROWSER</p>
+        <p>This should open the file dialog</p>
+    </div>
+    
+    <input type="file" id="testInput" accept=".csv" style="display: none;" onchange="fileSelected(this)">
+    
+    <div id="result"></div>
+    
+    <script>
+        function openFileDialog() {
+            console.log('Click detected - opening file dialog');
+            document.getElementById('testInput').click();
+        }
+        
+        function fileSelected(input) {
+            console.log('File selected:', input.files[0]?.name);
+            document.getElementById('result').innerHTML = 'Selected: ' + (input.files[0]?.name || 'none');
+        }
+    </script>
+</body>
+</html>

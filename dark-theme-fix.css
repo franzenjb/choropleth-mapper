@@ -1,0 +1,134 @@
+/* PROFESSIONAL DARK THEME IMPLEMENTATION */
+
+/* Dark theme color variables */
+[data-theme="dark"] {
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #2d2d30;
+    --bg-tertiary: #3e3e42;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #969696;
+    --border-color: #454545;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Main layout dark theme */
+[data-theme="dark"] body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .app-container,
+[data-theme="dark"] .container {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Workflow sections */
+[data-theme="dark"] .workflow-step {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Typography - readable contrast */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2, 
+[data-theme="dark"] h3 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div:not(.workflow-step) {
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+}
+
+[data-theme="dark"] strong {
+    color: var(--text-primary) !important;
+    background: transparent !important;
+}
+
+/* Form elements */
+[data-theme="dark"] select,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="file"] {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+[data-theme="dark"] select:focus,
+[data-theme="dark"] input:focus {
+    border-color: var(--arc-red) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(237, 27, 46, 0.2) !important;
+}
+
+/* Upload area */
+[data-theme="dark"] .upload-area {
+    background-color: var(--bg-tertiary) !important;
+    border: 2px dashed var(--border-color) !important;
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .upload-area:hover {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--arc-red) !important;
+}
+
+[data-theme="dark"] .upload-area p {
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+}
+
+/* Buttons */
+[data-theme="dark"] button:not(.btn-primary):not([class*="arc-red"]) {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+[data-theme="dark"] button:hover:not(.btn-primary) {
+    background-color: var(--bg-secondary) !important;
+}
+
+/* Keep Red Cross branding intact */
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .arc-red-bg,
+[data-theme="dark"] button[style*="background"] {
+    background-color: var(--arc-red) !important;
+    color: white !important;
+    border-color: var(--arc-red) !important;
+}
+
+/* Header area specific */
+[data-theme="dark"] .header-section {
+    background-color: var(--bg-secondary) !important;
+}
+
+/* Fix specific problematic elements */
+[data-theme="dark"] .form-group label {
+    color: var(--text-primary) !important;
+    background: transparent !important;
+}
+
+[data-theme="dark"] .instructions-note {
+    color: var(--text-muted) !important;
+    background: transparent !important;
+}
+
+/* Purpose/Function/Application text readability */
+[data-theme="dark"] .hero-description strong {
+    color: var(--arc-red) !important;
+    background: transparent !important;
+}
+
+[data-theme="dark"] .hero-description {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    padding: 1rem !important;
+    border-radius: 8px !important;
+    border-left: 4px solid var(--arc-red) !important;
+}

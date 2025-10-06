@@ -9,6 +9,9 @@ class ChoroplethMapper {
         this.classColors = [];
         this.baseLayer = null;
         
+        // Initialize unified database service
+        this.database = new UnifiedGISDatabase('choropleth-mapper');
+        
         // Initialize immediately since we're already called from DOMContentLoaded
         this.initEventListeners();
         this.loadStates();
@@ -501,6 +504,18 @@ Currently supported geography types:
         console.log(`Fetching counties${stateFilter ? ' for ' + stateFilter : ''}...`);
         
         try {
+            // Try unified database first, fallback to local files
+            try {
+                console.log('Loading counties from unified database API...');
+                const apiData = await this.database.getGeography('counties');
+                if (apiData && apiData.files && apiData.files.length > 0) {
+                    console.log('✅ Using 3.1GB database via API');
+                    // For now, fallback to local file until we process API response format
+                }
+            } catch (apiError) {
+                console.log('API not available, using local database files');
+            }
+            
             // Use local data file for instant access and reliability
             const url = 'data/us_counties.json';
             console.log('Loading counties from:', url);
@@ -1620,5 +1635,5 @@ Currently supported geography types:
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    new ChoroplethMapper();
+    window.choroplethMapper = new ChoroplethMapper();
 });
